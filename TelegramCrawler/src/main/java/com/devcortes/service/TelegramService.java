@@ -46,7 +46,7 @@ public class TelegramService extends TelegramLongPollingBot{
 				sendMsg(message, "I'm working");
 				break;			
 			default:
-				sendMsg(message, "I don`t know how answer you.");				
+				sendMsg(message, "I don`t know how answer you. Maybe you typed incorrect message");				
 				break;
 			}
 		}
