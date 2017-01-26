@@ -1,0 +1,36 @@
+buildscript {
+	ext {
+		springBootVersion = '1.4.3.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+
+jar {
+	baseName = 'demo'
+	version = '0.0.1-SNAPSHOT'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+	compile group: 'org.telegram', name: 'telegrambots', version: '2.4.4.4'
+	compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+	compile group: 'com.itextpdf', name: 'itextpdf', version: '5.0.6'
+	compile group: 'org.jsoup', name: 'jsoup', version: '1.7.2'
+	compile('org.springframework.boot:spring-boot-starter-web')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+}
