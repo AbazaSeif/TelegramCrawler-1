@@ -98,8 +98,7 @@ public class TelegramService extends TelegramLongPollingBot{
 	private void sendMsg(Message message, String text) {
 		SendMessage sendMessage = new SendMessage();
 		sendMessage.enableMarkdown(false);
-		sendMessage.setChatId(message.getChatId().toString());
-		//sendMessage.setReplyToMessageId(message.getMessageId());
+		sendMessage.setChatId(message.getChatId().toString());		
 		sendMessage.setText(text);
 		try {
 			sendMessage(sendMessage);
