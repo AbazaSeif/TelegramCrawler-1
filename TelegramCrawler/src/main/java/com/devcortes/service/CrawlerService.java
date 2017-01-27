@@ -16,8 +16,8 @@ import com.devcortes.components.entity.LinksList;
 
 
 @Service
-public class CrawlerService {
-	
+public class CrawlerService {	
+	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.112 Safari/535.1";
 	private String mainDomain;
 	private Integer globalDeph;
 	private HashSet<LinksList> setLinks = new HashSet<LinksList>();
@@ -28,64 +28,23 @@ public class CrawlerService {
 	 * It's method that run crawler for url with some deph.
 	 * @param url
 	 * @param deph
-	 * @throws IOException
+	 * @throws Exception 
 	 */
-	public void runCrawler(String url, Integer deph) throws IOException {
+	public HashSet<LinksList>  runCrawler(String url, Integer deph) throws Exception {
 		globalDeph = deph;
 		mainDomain = getDomain(url);
 		HashSet<String> fListURL = returnURL(url);
 		if (fListURL != null) {
 			LinksList ll = new LinksList(url, 0, fListURL, "");
 			setLinks.add(ll);
-			recursiveCrawl(ll, 0);
-			//showLinks();
+			recursiveCrawl(ll, 0);			
+			return setLinks;
 		} else {
-			System.out.println("URL is not correct");
+			return null;
 		}
+		
 
-	}
-
-	/**
-	 * It's method that begin show list link;
-	 */
-	public void showLinks() {
-		LinksList fll = new LinksList();
-		for (LinksList onceLink : setLinks) {
-			if (onceLink.getDeph() == 0) {
-				fll = onceLink;
-				break;
-			}
-		}
-		recursiveShow(fll);
-	}
-
-	/**
-	 * It's recursive method for show link;
-	 * @param ll
-	 */
-	public void recursiveShow(LinksList ll) {
-		String spacing1 = "";
-		for (int i = 1; i <= ll.getDeph(); i++) {
-			spacing1 += "\t";
-		}
-		//fileopen
-		System.out.println(spacing1 + ll.getUrl());
-		//fileclose
-		if (ll.getListUrl() != null) {
-			for (String url : ll.getListUrl()) {
-				LinksList ll1 = null;
-				for (LinksList onceLink : setLinks) {
-					if (onceLink.getUrl() == url) {
-						ll1 = onceLink;
-						break;
-					}
-				}
-				if (ll1 != null) {
-					recursiveShow(ll1);
-				}
-			}
-		}
-	}
+	}	
 
 	/**
 	 * It's method that search main domain from general url;
@@ -93,10 +52,16 @@ public class CrawlerService {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	public String getDomain(String url) throws MalformedURLException {
-		URL nURL = new URL(url);
-		String domen = nURL.getHost();
-		return domen.startsWith("www.") ? domen.substring(4) : domen;
+	public String getDomain(String url) throws Exception {
+		String domen =null;
+		try {
+			URL nURL = new URL(url);
+			domen = nURL.getHost();
+			domen = domen.startsWith("www.") ? domen.substring(4) : domen;
+		} catch (Exception e) {			
+		}
+		if(domen == null) return null;
+		else return domen; 
 	}
 
 	/**
@@ -125,7 +90,7 @@ public class CrawlerService {
 	 * @return
 	 * @throws IOException
 	 */
-	public synchronized HashSet<String> returnURL(String urlsend) throws IOException {
+	public HashSet<String> returnURL(String urlsend) throws IOException {
 		if (urlsend != null && !urlsend.equals("")) {
 			String localDomain;
 			HashSet<String> localSet = new HashSet<String>();
@@ -162,5 +127,40 @@ public class CrawlerService {
 			return null;
 		}
 
+	}	
+	
+	
+
+	public String getMainDomain() {
+		return mainDomain;
 	}
+
+	public void setMainDomain(String mainDomain) {
+		this.mainDomain = mainDomain;
+	}
+
+	public HashSet<LinksList> getSetLinks() {
+		return setLinks;
+	}
+
+	public void setSetLinks(HashSet<LinksList> setLinks) {
+		this.setLinks = setLinks;
+	}
+
+	public Set<String> getAllSetLink() {
+		return allSetLink;
+	}
+
+	public void setAllSetLink(Set<String> allSetLink) {
+		this.allSetLink = allSetLink;
+	}
+
+	public HashSet<String> getAlienLink() {
+		return alienLink;
+	}
+
+	public void setAlienLink(HashSet<String> alienLink) {
+		this.alienLink = alienLink;
+	}
+	
 }

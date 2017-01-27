@@ -14,9 +14,7 @@ public class TelegramController {
 	TelegramService telegramService;
 	@RequestMapping(value="/run", method = RequestMethod.GET)
 	public void runBot() throws Exception{
-		telegramService.initBot();		
-		//Crawler webCrawler = new Crawler();
-		//webCrawler.runCrawler("https://www.ukr.net/");		
+		telegramService.initBot();			
 	}
 }
 
