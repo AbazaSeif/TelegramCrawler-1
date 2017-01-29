@@ -1,15 +1,16 @@
 package com.devcortes.components.entity;
 
-import java.util.HashSet;
+import java.util.Set;
 
 public class LinksList {
 	private String url;
 	private Integer deph;
-	private HashSet<String> listUrl;
-	private String parentUrl;
-		
-	public LinksList(){}
-	public LinksList(String url, Integer deph, HashSet<String> listUrl, String parentUrl ){		
+	private Set<String> listUrl;
+	private String parentUrl;		
+	
+	public LinksList() {}
+	
+	public LinksList(String url, Integer deph, Set<String> listUrl, String parentUrl ){		
 		this.url = url;
 		this.deph = deph;
 		this.listUrl = listUrl;
@@ -28,10 +29,10 @@ public class LinksList {
 	public void setDeph(Integer deph) {
 		this.deph = deph;
 	}
-	public HashSet<String> getListUrl() {
+	public Set<String> getListUrl() {
 		return listUrl;
 	}
-	public void setListUrl(HashSet<String> listUrl) {
+	public void setListUrl(Set<String> listUrl) {
 		this.listUrl = listUrl;
 	}
 	public String getParentUrl() {

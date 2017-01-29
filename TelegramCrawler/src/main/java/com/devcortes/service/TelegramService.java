@@ -55,13 +55,18 @@ public class TelegramService extends TelegramLongPollingBot{
 			try {
 				CrawlerService crawlerService = new CrawlerService();				
 				ConvertData convertData = new ConvertData();
-				System.out.println("Begin");				
-				convertData.setLinks(crawlerService.runCrawler(message.getText(), 2));
+				System.out.println("Begin");
+				if(crawlerService.runCrawler(message.getText(), 2)){
+					convertData.setLinks(crawlerService.getSetLinks());
+				}
+				
 				if(convertData.getLinks() != null){
 					convertData.setAlienLink(crawlerService.getAlienLink());
+					
+					convertData.setUrl(message.getText().replace('/', ' '));
 					convertData.convert();
 					System.out.println("End");					
-					String s = "<a href=\"http://localhost:9090/ServerForData/\">" + "Download results" + "</a>";
+					String s = "Result in this website  " + "http://crawler.com/?url=" + message.getText();
 					sendMsg(message, s);
 					
 				}
