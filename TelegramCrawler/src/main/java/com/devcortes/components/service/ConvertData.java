@@ -5,30 +5,33 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
 
 import com.csvreader.CsvWriter;
 import com.devcortes.components.entity.LinksList;
-
+import com.devcortes.service.CrawlerService;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
 
 @Service
 public class ConvertData {
-	
-	private HashSet<LinksList> links;
-	private HashSet<String> alienLink;	
+	private static Logger log = Logger.getLogger(CrawlerService.class.getName());
+	private Set<LinksList> links;
+	private Set<String> alienLink;	
+	private String url;
 	
 	/**
-	 * Run convertation data that get from crawler
+	 * Run conversion data that get from crawler
 	 * @throws Exception
 	 */
 	public void convert() throws Exception{
-		FileWriter writer = new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.txt", false);
+		FileWriter writer = new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".txt", false);
 		writer.close();
-		CsvWriter csvOutput = new CsvWriter(new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.csv", false), ',');
+		CsvWriter csvOutput = new CsvWriter(new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".csv", false), ',');
 		csvOutput.close();
 		showLinks();
 	
@@ -36,7 +39,7 @@ public class ConvertData {
 	}
 
 	/**
-	 * Convertation data
+	 * Conversion data
 	 * @throws Exception
 	 */
 	public void showLinks() throws Exception {
@@ -58,17 +61,17 @@ public class ConvertData {
 	 * Convert data to txt format
 	 * @param ll
 	 */
-	public void recursiveShowTXT(LinksList ll) {
-		String spacing1 = "";
-		for (int i = 1; i <= ll.getDeph(); i++) {
-			spacing1 += "\t";
+	public void recursiveShowTXT(LinksList ll) {		
+		StringBuilder spacing1 = new StringBuilder();
+		for (int i = 1; i <= ll.getDeph(); i++) {			
+			spacing1.append("\t");
 		}
-		try(FileWriter writer = new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.txt", true))
+		try(FileWriter writer = new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".txt", true))
 	     {			 
-				writer.write(spacing1 + ll.getDeph() + ".  " + ll.getUrl() + "\n");			
+				writer.write(spacing1.toString() + ll.getDeph() + ".  " + ll.getUrl() + "\n");			
 				writer.close();
 	     } catch (Exception e) {			
-			e.printStackTrace();
+	    	 log.info("RecursiveShowTXT ---  " + e.getMessage());
 		}		
 		if (ll.getListUrl() != null) {
 			for (String url : ll.getListUrl()) {
@@ -90,14 +93,14 @@ public class ConvertData {
 	 * Add to txt file external links form site
 	 */
 	public void writeExternalLinkToTXT() {
-		try(FileWriter writer = new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.txt", true)){			 
+		try(FileWriter writer = new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".txt", true)){			 
 			writer.write("All external links:" + "\n");	
 			for (String string : alienLink) {
 				writer.write(string + "\n");		
 			}			
 			writer.close();	
 	    } catch (Exception e) {			
-			e.printStackTrace();
+	    	log.info("WriteExternalLinkToTXT ---  " + e.getMessage());
 		}
 		
 	}
@@ -107,10 +110,10 @@ public class ConvertData {
 	 * @param ll
 	 */
 	public void convertToPdf() throws Exception{
-		FileReader fileReader = new FileReader("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.txt");
+		FileReader fileReader = new FileReader("/var/www/crawler.com/public_html/results/" + url + ".txt");
 		BufferedReader bufferedReader = new BufferedReader(fileReader);
 		Document document = new Document();
-		PdfWriter.getInstance(document, new FileOutputStream("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.pdf"));
+		PdfWriter.getInstance(document, new FileOutputStream("/var/www/crawler.com/public_html/results/" + url + ".pdf"));
         document.open();
         String text = "";
         while((text = bufferedReader.readLine()) != null){
@@ -126,9 +129,8 @@ public class ConvertData {
 	 * @param ll
 	 */
 	public void convertToCSV(LinksList ll) throws Exception{		
-		try
-	     {			
-			CsvWriter csvOutput = new CsvWriter(new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.csv", true), ',');			
+		try{			
+			CsvWriter csvOutput = new CsvWriter(new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".csv", true), ',');			
 			for (int i = 1; i <= ll.getDeph(); i++) {
 				csvOutput.write("");
 			}					
@@ -136,7 +138,7 @@ public class ConvertData {
 			csvOutput.endRecord();	
 			csvOutput.close();
 	     } catch (Exception e) {			
-			e.printStackTrace();
+	    	 log.info("ConvertToCSV ---  " + e.getMessage());
 		}		
 		if (ll.getListUrl() != null) {
 			for (String url : ll.getListUrl()) {
@@ -160,7 +162,7 @@ public class ConvertData {
 	 */
 	public void writeExternalLinkToCSV() {
 		try{		
-			CsvWriter csvOutput = new CsvWriter(new FileWriter("/home/cortes/TelegramCrawler/ServerForData/WebContent/results/Crawler.csv", true), ',');
+			CsvWriter csvOutput = new CsvWriter(new FileWriter("/var/www/crawler.com/public_html/results/" + url + ".csv", true), ',');
 			csvOutput.write("All external links:");	
 			csvOutput.endRecord();	
 			for (String string : alienLink) {					
@@ -169,25 +171,34 @@ public class ConvertData {
 			}			
 			csvOutput.close();
 	    } catch (Exception e) {			
-			e.printStackTrace();
+	    	log.info("WriteExternalLinkToCSV ---  " + e.getMessage());
 		}
 		
 	}
 	
-	public HashSet<LinksList> getLinks() {
+	public Set<LinksList> getLinks() {
 		return links;
 	}
 
-	public void setLinks(HashSet<LinksList> links) {
+	public void setLinks(Set<LinksList> links) {
 		this.links = links;
 	}
 
-	public HashSet<String> getAlienLink() {
+	public Set<String> getAlienLink() {
 		return alienLink;
 	}
 
-	public void setAlienLink(HashSet<String> alienLink) {
+	public void setAlienLink(Set<String> alienLink) {
 		this.alienLink = alienLink;
 	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+	
 	
 }
