@@ -1,4 +1,4 @@
-package com.devcorte.run;
+package com.devcortes.run;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,6 +11,6 @@ public class TelegramCrawlerApplicationTests {
 
 	@Test
 	public void contextLoads() {
-	}
+	}	
 
 }
