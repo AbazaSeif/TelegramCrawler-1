@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan({"com.devcortes"})
+@ComponentScan("com.devcortes")
 public class TelegramCrawlerApplication {
 
 	public static void main(String[] args) {
