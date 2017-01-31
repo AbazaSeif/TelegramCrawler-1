@@ -86,7 +86,7 @@ public class ConvertData {
 	public void recursiveShowTXT(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) {
 		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getCurrentDepth(), alreadyParsedLink.getCurrentUrl(),
 				fileName);
-		if (alreadyParsedLink.getSetLinksOnCurrentUrl() != null) {
+		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
 			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
 				AlreadyParsedLink localAlreadyParsedLink = null;
 				for (AlreadyParsedLink onceLink : alreadyParsedLinks) {
