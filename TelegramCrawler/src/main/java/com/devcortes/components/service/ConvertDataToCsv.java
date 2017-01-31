@@ -19,31 +19,47 @@ public class ConvertDataToCsv {
 	private boolean permissionAppendFile = true;
 
 	public void writeToCsvLocalLink(int depth, String url, String nameFile) {
+		
+		CsvWriter csvOutput = null;
 		try {
-			CsvWriter csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
+			
+			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
+			
 			for (int i = 0; i < depth; i++) {
 				csvOutput.write("");
 			}
+			
 			csvOutput.write(url);
-			csvOutput.endRecord();
-			csvOutput.close();
+			csvOutput.endRecord();	
+			
 		} catch (IOException e) {
 			log.error("Error in writeToCsvLocalLink ---  " + e.getMessage());
+		} finally {
+			csvOutput.close();
 		}
 	}
 
 	public void writeToCsvExternalLink(Set<String> alienLink, String nameFile) {
+		
+		CsvWriter csvOutput = null;
 		try {
-			CsvWriter csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
+			
+			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
 			csvOutput.write("All external links:");
 			csvOutput.endRecord();
+			
 			for (String string : alienLink) {
 				csvOutput.write(string);
 				csvOutput.endRecord();
 			}
+			
 			csvOutput.close();
+			
 		} catch (Exception e) {
 			log.error("Error in writeExternalLinkToCSV ---  " + e.getMessage());
+		}
+		finally {
+			csvOutput.close();
 		}
 	}
 }

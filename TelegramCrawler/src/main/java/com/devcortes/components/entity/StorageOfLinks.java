@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
  *
  */
 public class StorageOfLinks {
+	
 	private String rootUrl;
 	private String rootDomain;
 	private Integer globalDepth;
@@ -25,6 +26,7 @@ public class StorageOfLinks {
 	}
 
 	public StorageOfLinks(String url, Integer depth, String domen) {
+		
 		this.rootUrl = url;
 		this.rootDomain = domen;
 		this.globalDepth = depth;

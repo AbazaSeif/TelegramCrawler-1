@@ -1,5 +1,7 @@
 package com.devcortes.components.service;
 
+import static org.hamcrest.CoreMatchers.nullValue;
+
 import java.io.FileWriter;
 import java.util.Set;
 
@@ -21,15 +23,14 @@ import com.devcortes.components.entity.StorageOfLinks;
 public class ConvertData {
 
 	private static final Logger log = Logger.getLogger(ConvertData.class.getName());
-	private static final String PATH = "/var/www/crawler.com/public_html/results/";
-	private static final String TXT = ".txt";
-	private static final String CSV = ".csv";
-	private static final char SEPARATOR = ',';
-	private boolean banAppendFile = false;
+	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
+	private static final String TXT_FILE_FORMAT = ".txt";
+	private static final String CSV_FILE_FORMAT = ".csv";
+	private static final char SEPARATOR_FOR_CSV_FILE = ',';
+	private static final boolean BANAPPENDFILE = false;
 	private String fileName;
 
-	private Set<AlreadyParsedLink> alreadyParsedLinks;
-	private Set<String> externalLinks;
+	
 
 	@Autowired
 	private ConvertDataToTxt convertTxtService;
@@ -48,12 +49,19 @@ public class ConvertData {
 	public void runConvertResult(StorageOfLinks storageSetsLinks) throws Exception {
 
 		fileName = storageSetsLinks.getRootUrl().replace('/', ' ');
-		FileWriter writer = new FileWriter(PATH + fileName + TXT, banAppendFile);
-		writer.close();
-		CsvWriter csvOutput = new CsvWriter(new FileWriter(PATH + fileName + CSV, banAppendFile), SEPARATOR);
-		csvOutput.close();
+		FileWriter writer = null;
+		CsvWriter csvOutput = null;
+		
+		try {
+			
+			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BANAPPENDFILE);
+			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BANAPPENDFILE), SEPARATOR_FOR_CSV_FILE);
+			
+		} finally {
+			writer.close();			
+			csvOutput.close();
+		}		
 		conversationData(storageSetsLinks);
-
 	}
 
 	/**
@@ -62,14 +70,18 @@ public class ConvertData {
 	 * @throws Exception
 	 */
 	public void conversationData(StorageOfLinks storageSetsLinks) throws Exception {
+		
 		AlreadyParsedLink alreadyParsedLink = new AlreadyParsedLink();
-		for (AlreadyParsedLink onceLink : alreadyParsedLinks) {
+		
+		for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+			
 			int depthOfRootLink = 0;
 			if (onceLink.getCurrentDepth() == depthOfRootLink) {
 				alreadyParsedLink = onceLink;
 				break;
 			}
 		}
+		
 		recursiveShowTXT(alreadyParsedLink, storageSetsLinks);
 		convertTxtService.writeToTxtExternalLink(storageSetsLinks.getExternalLinks(), fileName);
 		convertDataToPdfService.writeToPdfLinks(fileName);
@@ -84,17 +96,23 @@ public class ConvertData {
 	 * @param alreadyParsedLink
 	 */
 	public void recursiveShowTXT(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) {
+		
 		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getCurrentDepth(), alreadyParsedLink.getCurrentUrl(),
 				fileName);
+		
 		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
+			
 			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
+				
 				AlreadyParsedLink localAlreadyParsedLink = null;
-				for (AlreadyParsedLink onceLink : alreadyParsedLinks) {
+				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+					
 					if (onceLink.getCurrentUrl() == url) {
 						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
+				
 				if (localAlreadyParsedLink != null) {
 					recursiveShowTXT(localAlreadyParsedLink, storageSetsLinks);
 				}
@@ -108,17 +126,24 @@ public class ConvertData {
 	 * @param alreadyParsedLink
 	 */
 	public void convertToCSV(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) throws Exception {
+		
 		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getCurrentDepth(),
 				alreadyParsedLink.getCurrentUrl(), fileName);
+		
 		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
+			
 			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
+				
 				AlreadyParsedLink localAlreadyParsedLink = null;
-				for (AlreadyParsedLink onceLink : alreadyParsedLinks) {
+				
+				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+					
 					if (onceLink.getCurrentUrl() == url) {
 						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
+				
 				if (localAlreadyParsedLink != null) {
 					convertToCSV(localAlreadyParsedLink, storageSetsLinks);
 				}
@@ -127,20 +152,5 @@ public class ConvertData {
 
 	}
 
-	public Set<AlreadyParsedLink> getAlreadyParsedLinks() {
-		return alreadyParsedLinks;
-	}
-
-	public void setAlreadyParsedLinks(Set<AlreadyParsedLink> alreadyParsedLinks) {
-		this.alreadyParsedLinks = alreadyParsedLinks;
-	}
-
-	public Set<String> getExternalLinks() {
-		return externalLinks;
-	}
-
-	public void setExternalLinks(Set<String> externalLinks) {
-		this.externalLinks = externalLinks;
-	}
-
+	
 }

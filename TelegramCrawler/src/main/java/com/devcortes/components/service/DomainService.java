@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class DomainService {
-	private static final Logger log = Logger.getLogger(DomainService.class.getName());
+	private static final Logger log = Logger.getLogger(DomainService.class);
 
 	/**
 	 * It's method that search main domain from general url;
@@ -24,11 +24,14 @@ public class DomainService {
 	 * @throws MalformedURLException
 	 */
 	public String getDomain(String url) {
+		
 		String domen = "";
 		try {
+			
 			URL nURL = new URL(url);
 			domen = nURL.getHost();
 			domen = domen.startsWith("www.") ? domen.substring(4) : domen;
+			
 		} catch (MalformedURLException e) {
 			log.error("Error in getDomain ---  " + e.getMessage());
 		}

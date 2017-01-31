@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
  */
 
 public class AlreadyParsedLink {
+	
 	private String currentUrl;
 	private Integer currentDepth;
 	private Set<String> setLinksOnCurrentUrl;
@@ -21,6 +22,7 @@ public class AlreadyParsedLink {
 	}
 
 	public AlreadyParsedLink(String url, Integer deph, Set<String> listUrl, String parentUrl) {
+		
 		this.currentUrl = url;
 		this.currentDepth = deph;
 		this.setLinksOnCurrentUrl = listUrl;

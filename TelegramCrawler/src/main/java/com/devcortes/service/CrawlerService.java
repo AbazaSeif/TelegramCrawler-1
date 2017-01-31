@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,6 +20,8 @@ import com.devcortes.components.service.DomainService;
 @Service
 public class CrawlerService {
 	private static Logger log = Logger.getLogger(CrawlerService.class.getName());
+	private static final String HTML_LINK_TAG = "a";
+	private static final String SELECT_URL_FROM_HTML_LINK_TAG = "abs:href";
 
 	/**
 	 * It's method that run crawler for url with some deph.
@@ -40,7 +44,7 @@ public class CrawlerService {
 
 		storageOfLinks.getAlreadyParsedLinksWithRootDomain().add(alreadyParsedLink);
 		try {
-			recursiveCrawl(alreadyParsedLink, 0, storageOfLinks, domainService);
+			recursiveCrawl(alreadyParsedLink, storageOfLinks, domainService);
 		} catch (IOException e) {
 			log.error("RunCrawler ---  " + e.getMessage());
 		}
@@ -55,18 +59,24 @@ public class CrawlerService {
 	 * @param deph
 	 * @throws IOException
 	 */
-	public void recursiveCrawl(AlreadyParsedLink listLink, int deph, StorageOfLinks storageOfLinks,
+	public void recursiveCrawl(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageOfLinks,
 			DomainService domainService) throws IOException {
-		deph++;
-		for (String link : listLink.getSetLinksOnCurrentUrl()) {
+
+		int depth = alreadyParsedLink.getCurrentDepth() + 1;
+
+		for (String link : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
 			Set<String> recurSive = new HashSet<>();
+
 			if (returnURL(link, storageOfLinks, domainService)) {
 				recurSive = storageOfLinks.getLocalSet();
 			}
-			AlreadyParsedLink ll = new AlreadyParsedLink(link, deph, recurSive, listLink.getCurrentUrl());
-			storageOfLinks.getAlreadyParsedLinksWithRootDomain().add(ll);
-			if (recurSive != null && deph < storageOfLinks.getGlobalDepth()) {
-				recursiveCrawl(ll, deph, storageOfLinks, domainService);
+
+			AlreadyParsedLink localAlreadyParsedLink = new AlreadyParsedLink(link, depth, recurSive,
+					alreadyParsedLink.getCurrentUrl());
+			storageOfLinks.getAlreadyParsedLinksWithRootDomain().add(localAlreadyParsedLink);
+
+			if (!recurSive.isEmpty() && depth < storageOfLinks.getGlobalDepth()) {
+				recursiveCrawl(localAlreadyParsedLink, storageOfLinks, domainService);
 			}
 		}
 	}
@@ -79,22 +89,28 @@ public class CrawlerService {
 	 * @throws IOException
 	 */
 	public boolean returnURL(String urlsend, StorageOfLinks storageOfLinks, DomainService domainService) {
+
 		storageOfLinks.setLocalSet(new HashSet<>());
-		if (urlsend == null || urlsend.isEmpty()) {
+		if (StringUtils.isBlank(urlsend) || urlsend.isEmpty()) {
 			return false;
 		}
+
 		Document doc = null;
 		try {
 			doc = Jsoup.connect(urlsend).get();
-		} catch (IOException e1) {
-			log.info("ReturnURL ---  " + e1.getMessage());
+		} catch (IOException e) {
+			log.error("ReturnURL ---  " + e.getMessage());
+			// throw new RuntimeException();
 		}
+
 		if (doc != null) {
-			Elements links = doc.select("a");
+			Elements links = doc.select(HTML_LINK_TAG);
 			String finalString;
+
 			for (Element e : links) {
-				finalString = e.attr("abs:href");
+				finalString = e.attr(SELECT_URL_FROM_HTML_LINK_TAG);
 				String localDomain = domainService.getDomain(finalString);
+
 				if (localDomain.equals(storageOfLinks.getRootDomain())) {
 					storageOfLinks.getLocalSet().add(finalString);
 				} else {
