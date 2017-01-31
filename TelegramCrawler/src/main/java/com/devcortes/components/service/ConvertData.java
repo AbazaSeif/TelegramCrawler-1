@@ -57,7 +57,7 @@ public class ConvertData {
 	}
 
 	/**
-	 * Conversion data
+	 * Conversion data into pdf, txt, csv formats
 	 * 
 	 * @throws Exception
 	 */
