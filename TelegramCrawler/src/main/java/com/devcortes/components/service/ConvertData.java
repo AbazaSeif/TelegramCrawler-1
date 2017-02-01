@@ -1,10 +1,6 @@
 package com.devcortes.components.service;
 
-import static org.hamcrest.CoreMatchers.nullValue;
-
 import java.io.FileWriter;
-import java.util.Set;
-
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,7 +23,7 @@ public class ConvertData {
 	private static final String TXT_FILE_FORMAT = ".txt";
 	private static final String CSV_FILE_FORMAT = ".csv";
 	private static final char SEPARATOR_FOR_CSV_FILE = ',';
-	private static final boolean BANAPPENDFILE = false;
+	private static final boolean BAN_TO_APPEND_FILE = false;
 	private String fileName;
 
 	@Autowired
@@ -54,8 +50,8 @@ public class ConvertData {
 
 		try {
 
-			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BANAPPENDFILE);
-			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BANAPPENDFILE),
+			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BAN_TO_APPEND_FILE);
+			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BAN_TO_APPEND_FILE),
 					SEPARATOR_FOR_CSV_FILE);
 
 		} finally {

@@ -110,7 +110,7 @@ public class CrawlerService {
 			doc = Jsoup.connect(urlsend).get();
 		} catch (IOException e) {
 			log.error("ReturnURL ---  " + e.getMessage());
-			// throw new RuntimeException();
+			throw new RuntimeException(e);
 		}
 
 		if (doc != null) {

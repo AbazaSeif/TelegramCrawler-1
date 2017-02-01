@@ -13,7 +13,7 @@ public class ConvertDataToTxt {
 	private static final Logger log = Logger.getLogger(ConvertDataToTxt.class.getName());
 	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
 	private static final String TXT_FILE_FORMAT = ".txt";
-	private static final boolean PERMISSIONAPPENDFILE = true;
+	private static final boolean PERMISSION_TO_APPEND_FILE = true;
 
 	/**
 	 * Write to txt file all links which have root domain
@@ -28,7 +28,7 @@ public class ConvertDataToTxt {
 	public void writeToTxtLocalLink(int depth, String url, String nameFile) {
 
 		try (FileWriter writer = new FileWriter(PATH_TO_RESULT_FILE + nameFile + TXT_FILE_FORMAT,
-				PERMISSIONAPPENDFILE)) {
+				PERMISSION_TO_APPEND_FILE)) {
 
 			StringBuilder spacingForStructure = new StringBuilder();
 
@@ -56,7 +56,7 @@ public class ConvertDataToTxt {
 	public void writeToTxtExternalLink(Set<String> externalLinks, String nameFile) {
 
 		try (FileWriter writer = new FileWriter(PATH_TO_RESULT_FILE + nameFile + TXT_FILE_FORMAT,
-				PERMISSIONAPPENDFILE)) {
+				PERMISSION_TO_APPEND_FILE)) {
 
 			writer.write("All external links:" + "\n");
 
