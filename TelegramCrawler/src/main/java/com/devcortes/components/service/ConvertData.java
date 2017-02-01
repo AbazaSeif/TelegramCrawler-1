@@ -1,10 +1,6 @@
 package com.devcortes.components.service;
 
-import static org.hamcrest.CoreMatchers.nullValue;
-
 import java.io.FileWriter;
-import java.util.Set;
-
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
