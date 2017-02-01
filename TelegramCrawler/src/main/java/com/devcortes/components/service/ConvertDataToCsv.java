@@ -58,7 +58,7 @@ public class ConvertDataToCsv {
 	 * @param nameFile
 	 *            nameFile-name file in which will write result parsing
 	 */
-	public void writeToCsvExternalLink(Set<String> externalLinks, String nameFile) {
+	public void writeToCsvExternalLink(Set<String> externalLinks, String nameFile, String title) {
 
 		CsvWriter csvOutput = null;
 		try {

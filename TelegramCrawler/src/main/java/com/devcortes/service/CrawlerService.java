@@ -1,9 +1,6 @@
 package com.devcortes.service;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -26,39 +23,46 @@ import com.devcortes.components.service.DomainService;
 
 @Service
 public class CrawlerService {
-	
+
 	private static Logger log = Logger.getLogger(CrawlerService.class.getName());
 	private static final String HTML_LINK_TAG = "a";
 	private static final String SELECT_URL_FROM_HTML_LINK_TAG = "abs:href";
-	
+
 	@Autowired
 	private DomainService domainService;
-	
 
 	/**
 	 * It's method that run crawler for url with some deph.
 	 * 
 	 * @param storageOfLinks
 	 *            storageOfLinks-model where store results of parsing
-	 * @param domainService
-	 *            domainService-domain links which will parse
-	 * @return
+	 *
+	 * @return true-when result parsing is successful 
+	 *    	   false-when result parsing is not successful
 	 */
-	public boolean runCrawler(ParsePage parsePage, StorageResult storageResult) {
+	public boolean runCrawler(StorageResult storageResult) {
 
-		fillURLs(storageResult.getUrl(), storageResult, parsePage);
+	    int accessDepth = 0;
+	    
+		ParsePage parsePage = new ParsePage(storageResult.getUrl(), accessDepth, "");
+
+		try {
+			fillURLs(storageResult, parsePage);
+		} catch (RuntimeException e) {
+			storageResult.getNotParsedLinks().add(storageResult.getUrl());
+			storageResult.getParsePages().add(parsePage);
+			return false;
+		}
 		
-		
+
 		if (parsePage.getLocalLinks().isEmpty()) {
 			return false;
 		}
 
-		ParsePage alreadyParsedLink = new ParsePage(storageResult.getUrl(), 0, parsePage.getLocalLinks(), "");
+		storageResult.getParsePages().add(parsePage);
 
-		storageResult.getParsePages().add(alreadyParsedLink);
-		
 		try {
-			recursiveCrawl(alreadyParsedLink, storageResult, domainService);
+			recursiveCrawl(parsePage, storageResult);
 		} catch (IOException e) {
 			log.error("RunCrawler ---  " + e.getMessage());
 		}
@@ -77,19 +81,24 @@ public class CrawlerService {
 	 *            domainService-domain links which will parse
 	 * @throws IOException
 	 */
-	public void recursiveCrawl(ParsePage parsePage, StorageResult storageResult,
-			DomainService domainService) throws IOException {
+	public void recursiveCrawl(ParsePage parsePage, StorageResult storageResult) throws IOException {
 
 		for (String parseLink : parsePage.getLocalLinks()) {
+
+			ParsePage localAlreadyParsedLink = new ParsePage(parseLink, parsePage.getDepth() + 1,
+					parsePage.getUrl());			
 			
-			fillURLs(parseLink, storageResult, parsePage);
-			
-			ParsePage localAlreadyParsedLink = new ParsePage(parseLink, parsePage.getDepth() + 1, parsePage.getLocalLinks(), parsePage.getUrl());
-			
+			try {
+				fillURLs(storageResult, localAlreadyParsedLink);
+			} catch (RuntimeException e) {
+				storageResult.getNotParsedLinks().add(localAlreadyParsedLink.getUrl());							
+			}
+
 			storageResult.getParsePages().add(localAlreadyParsedLink);
 
-			if (!parsePage.getLocalLinks().isEmpty() && localAlreadyParsedLink.getDepth() < storageResult.getAccessDepth()) {
-				recursiveCrawl(localAlreadyParsedLink, storageResult, domainService);
+			if (!parsePage.getLocalLinks().isEmpty()
+					&& localAlreadyParsedLink.getDepth() < storageResult.getAccessDepth()) {
+				recursiveCrawl(localAlreadyParsedLink, storageResult);
 			}
 		}
 	}
@@ -104,18 +113,18 @@ public class CrawlerService {
 	 * @param domainService
 	 *            domainService-domain links which will parse
 	 */
-	public void fillURLs(String urlsend, StorageResult storageResult, ParsePage parsePage) {
+	public void fillURLs(StorageResult storageResult, ParsePage parsePage) {
 
-		parsePage.setLocalLinks(new HashSet<>());
-		if (StringUtils.isBlank(urlsend) || urlsend.isEmpty()) {
+		if (StringUtils.isBlank(parsePage.getUrl())) {
 			return;
 		}
 
 		Document doc = null;
 		try {
-			doc = Jsoup.connect(urlsend).get();
-		} catch (IOException e) {
-			log.error("ReturnURL ---  " + e.getMessage());			
+			doc = Jsoup.connect(parsePage.getUrl()).get();
+		} catch (Exception e) {
+			log.error("fillURLs ---  " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 
 		if (doc != null) {
@@ -123,9 +132,10 @@ public class CrawlerService {
 			String finalString;
 
 			for (Element e : links) {
+			
 				finalString = e.attr(SELECT_URL_FROM_HTML_LINK_TAG);
 				String localDomain = domainService.getDomain(finalString);
-
+				
 				if (localDomain.equals(storageResult.getDomain())) {
 					parsePage.getLocalLinks().add(finalString);
 				} else {
@@ -134,7 +144,7 @@ public class CrawlerService {
 				storageResult.getUniqeuLinks().add(finalString);
 			}
 		}
-		storageResult.getUniqeuLinks().add(urlsend);
+		storageResult.getUniqeuLinks().add(parsePage.getUrl());
 	}
 
 }

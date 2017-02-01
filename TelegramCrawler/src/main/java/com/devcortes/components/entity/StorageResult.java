@@ -12,25 +12,29 @@ import org.springframework.stereotype.Component;
  *
  */
 public class StorageResult {
-	
+
 	private String url;
 	private String domain;
 	private Integer accessDepth;
 	private Set<ParsePage> parsePages;
 	private Set<String> uniqeuLinks;
 	private Set<String> externalLinks;
+	private Set<String> notParsedLinks;
+	private Set<String> canNotFindDomen;
 
 	public StorageResult() {
 	}
 
 	public StorageResult(String url, Integer depth, String domen) {
-		
+
 		this.url = url;
 		this.domain = domen;
 		this.accessDepth = depth;
 		this.parsePages = new HashSet<>();
 		this.uniqeuLinks = new HashSet<>();
-		this.externalLinks = new HashSet<>();	
+		this.externalLinks = new HashSet<>();
+		this.notParsedLinks = new HashSet<>();
+		this.canNotFindDomen = new HashSet<>();
 	}
 
 	public String getUrl() {
@@ -81,6 +85,20 @@ public class StorageResult {
 		this.externalLinks = externalLinks;
 	}
 
-	
+	public Set<String> getNotParsedLinks() {
+		return notParsedLinks;
+	}
+
+	public void setNotParsedLinks(Set<String> notParsedLinks) {
+		this.notParsedLinks = notParsedLinks;
+	}
+
+	public Set<String> getCanNotFindDomen() {
+		return canNotFindDomen;
+	}
+
+	public void setCanNotFindDomen(Set<String> canNotFindDomen) {
+		this.canNotFindDomen = canNotFindDomen;
+	}
 
 }

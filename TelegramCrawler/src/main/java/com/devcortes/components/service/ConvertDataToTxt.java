@@ -53,12 +53,12 @@ public class ConvertDataToTxt {
 	 * @param nameFile
 	 *            nameFile-name file in which will write result parsing
 	 */
-	public void writeToTxtExternalLink(Set<String> externalLinks, String nameFile) {
+	public void writeToTxtExternalLink(Set<String> externalLinks, String nameFile, String title) {
 
 		try (FileWriter writer = new FileWriter(PATH_TO_RESULT_FILE + nameFile + TXT_FILE_FORMAT,
 				PERMISSION_TO_APPEND_FILE)) {
 
-			writer.write("All external links:" + "\n");
+			writer.write(title + "\n");
 
 			for (String string : externalLinks) {
 				writer.write(string + "\n");
@@ -69,5 +69,5 @@ public class ConvertDataToTxt {
 		} catch (IOException e) {
 			log.error("Error in writeToTxtExternalLink: " + e.getMessage());
 		}
-	}
+	}	
 }

@@ -11,8 +11,6 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
-
-import com.devcortes.components.entity.ParsePage;
 import com.devcortes.components.entity.StorageResult;
 import com.devcortes.components.service.ConvertData;
 import com.devcortes.components.service.DomainService;
@@ -91,13 +89,14 @@ public class TelegramService extends TelegramLongPollingBot {
 		Message message = update.getMessage();
 
 		try {
+
 			String url = message.getText();
 			String domen = domainService.getDomain(url);
+
 			int accessDepth = 2;
-			ParsePage parsePage = new ParsePage();
 			StorageResult storageLinks = new StorageResult(url, accessDepth, domen);
 
-			if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(parsePage, storageLinks)
+			if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(storageLinks)
 					&& !storageLinks.getParsePages().isEmpty()) {
 
 				convertData.runConvertResult(storageLinks);
@@ -124,15 +123,24 @@ public class TelegramService extends TelegramLongPollingBot {
 		}
 	}
 
+	/**
+	 * Function for send message from bot to telegram
+	 * 
+	 * @param message
+	 *            message - message information that telegram get
+	 * @param text
+	 *            text-text that bot send to telegram
+	 */
 	private void sendMsg(Message message, String text) {
 
-		SendMessage sendMessage = new SendMessage();
-		sendMessage.enableMarkdown(false);
-		sendMessage.setChatId(message.getChatId().toString());
-		sendMessage.setText(text);
+		boolean enableMarkdownMessage = false;
+		SendMessage messageForSend = new SendMessage();
+		messageForSend.enableMarkdown(enableMarkdownMessage);
+		messageForSend.setChatId(message.getChatId().toString());
+		messageForSend.setText(text);
 
 		try {
-			sendMessage(sendMessage);
+			sendMessage(messageForSend);
 		} catch (TelegramApiException e) {
 			log.error("Error in sendMsg ---  " + e.getMessage());
 		}

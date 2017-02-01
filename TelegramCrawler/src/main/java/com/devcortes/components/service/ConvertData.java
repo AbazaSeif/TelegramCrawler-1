@@ -22,6 +22,9 @@ public class ConvertData {
 	private static final String CSV_FILE_FORMAT = ".csv";
 	private static final char SEPARATOR_FOR_CSV_FILE = ',';
 	private static final boolean BAN_TO_APPEND_FILE = false;
+	private static final String TITLE_TO_FILE_EXTERNAL_LINKS = "All external links:";
+	private static final String TITLE_TO_FILE_NOTPARSED_LINKS = "All not parsed links:";
+	
 	private String fileName;
 
 	@Autowired
@@ -80,11 +83,14 @@ public class ConvertData {
 		}
 
 		recursiveShowTXT(alreadyParsedLink, storageResult);
-		convertTxtService.writeToTxtExternalLink(storageResult.getExternalLinks(), fileName);
+		convertTxtService.writeToTxtExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_EXTERNAL_LINKS);
+		convertTxtService.writeToTxtExternalLink(storageResult.getNotParsedLinks(), fileName, TITLE_TO_FILE_NOTPARSED_LINKS);
+	
 		convertDataToPdfService.writeToPdfLinks(fileName);
 
 		convertToCSV(alreadyParsedLink, storageResult);
-		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName);
+		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_EXTERNAL_LINKS);
+		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_NOTPARSED_LINKS);
 	}
 
 	/**

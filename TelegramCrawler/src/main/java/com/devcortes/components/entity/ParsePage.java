@@ -1,5 +1,6 @@
 package com.devcortes.components.entity;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -18,12 +19,12 @@ public class ParsePage {
 	public ParsePage() {
 	}
 
-	public ParsePage(String url, Integer deph, Set<String> listUrl, String parentUrl) {
+	public ParsePage(String url, Integer deph, String parentUrl) {
 
 		this.url = url;
 		this.depth = deph;
 		this.parentUrl = parentUrl;
-		this.localLinks = listUrl;
+		this.localLinks = new HashSet<>();
 	}
 
 	public String getUrl() {
