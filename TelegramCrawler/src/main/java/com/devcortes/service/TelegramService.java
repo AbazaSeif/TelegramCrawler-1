@@ -12,7 +12,8 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-import com.devcortes.components.entity.StorageOfLinks;
+import com.devcortes.components.entity.ParsePage;
+import com.devcortes.components.entity.StorageResult;
 import com.devcortes.components.service.ConvertData;
 import com.devcortes.components.service.DomainService;
 
@@ -24,13 +25,6 @@ import com.devcortes.components.service.DomainService;
  */
 @Service
 public class TelegramService extends TelegramLongPollingBot {
-
-	@Autowired
-	private CrawlerService crawlerService;
-	@Autowired
-	private ConvertData convertData;
-	@Autowired
-	private DomainService domainService;
 
 	private static final Logger log = Logger.getLogger(DomainService.class);
 	private static final String BOTTOKEN = "261462589:AAHBE65vOUd6hEIqD--QJezegwXL63JZfUk";
@@ -49,6 +43,15 @@ public class TelegramService extends TelegramLongPollingBot {
 		ApiContextInitializer.init();
 	}
 
+	@Autowired
+	private CrawlerService crawlerService;
+
+	@Autowired
+	private ConvertData convertData;
+
+	@Autowired
+	private DomainService domainService;
+
 	/**
 	 * Initialization of Api Context
 	 */
@@ -59,6 +62,7 @@ public class TelegramService extends TelegramLongPollingBot {
 			telegramBotsApi.registerBot(this);
 		} catch (TelegramApiException e) {
 			log.error("Error in getDomain ---  " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -71,53 +75,53 @@ public class TelegramService extends TelegramLongPollingBot {
 	}
 
 	/**
+	 * This method must always return Bot Token
+	 */
+	@Override
+	public String getBotToken() {
+		return BOTTOKEN;
+	}
+
+	/**
 	 * This method will be called when an Update is received by your bot
 	 */
 	@Override
 	public void onUpdateReceived(Update update) {
 
 		Message message = update.getMessage();
-		if (message != null && message.hasText()) {
 
-			try {
-				String url = message.getText();
-				String domen = domainService.getDomain(url);
-				StorageOfLinks storageSetsLinks = new StorageOfLinks(url, 2, domen);
-				if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(storageSetsLinks, domainService)
-						&& !storageSetsLinks.getAlreadyParsedLinksWithRootDomain().isEmpty()) {
+		try {
+			String url = message.getText();
+			String domen = domainService.getDomain(url);
+			int accessDepth = 2;
+			ParsePage parsePage = new ParsePage();
+			StorageResult storageLinks = new StorageResult(url, accessDepth, domen);
 
-					convertData.runConvertResult(storageSetsLinks);
-					String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
-					sendMsg(message, s);
+			if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(parsePage, storageLinks)
+					&& !storageLinks.getParsePages().isEmpty()) {
 
-				} else {
-					String key = message.getText();
-					switch (key) {
-					case REQUEST_TO_BOT_ON_HELP:
-						sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
-						break;
-					case REQUEST_TO_BOT_ON_START:
-						sendMsg(message, ANSWER_FROM_BOT_ON_START);
-						break;
-					default:
-						sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
-						break;
-					}
+				convertData.runConvertResult(storageLinks);
+				String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
+				sendMsg(message, s);
+
+			} else {
+				String key = message.getText();
+				switch (key) {
+				case REQUEST_TO_BOT_ON_HELP:
+					sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
+					break;
+				case REQUEST_TO_BOT_ON_START:
+					sendMsg(message, ANSWER_FROM_BOT_ON_START);
+					break;
+				default:
+					sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
+					break;
 				}
-
-			} catch (Exception e) {
-				log.error("Error in getDomain ---  " + e.getMessage());
 			}
+
+		} catch (Exception e) {
+			log.error("Error in getDomain ---  " + e.getMessage());
 		}
-
-	}
-
-	/**
-	 * This method must always return Bot Token
-	 */
-	@Override
-	public String getBotToken() {
-		return BOTTOKEN;
 	}
 
 	private void sendMsg(Message message, String text) {
@@ -126,10 +130,12 @@ public class TelegramService extends TelegramLongPollingBot {
 		sendMessage.enableMarkdown(false);
 		sendMessage.setChatId(message.getChatId().toString());
 		sendMessage.setText(text);
+
 		try {
 			sendMessage(sendMessage);
 		} catch (TelegramApiException e) {
 			log.error("Error in sendMsg ---  " + e.getMessage());
 		}
+
 	}
 }
