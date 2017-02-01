@@ -15,7 +15,7 @@ public class ConvertDataToCsv {
 	private static final Logger log = Logger.getLogger(ConvertDataToCsv.class.getName());
 	private static final String PATH = "/var/www/crawler.com/public_html/results/";
 	private static final String CSV = ".csv";
-	private static final char SEPARATOR = ',';
+	private static final char SEPARATOR_FOR_CSV_FILE = ',';
 	private boolean permissionAppendFile = true;
 
 	/**
@@ -33,7 +33,7 @@ public class ConvertDataToCsv {
 		CsvWriter csvOutput = null;
 		try {
 
-			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
+			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR_FOR_CSV_FILE);
 
 			for (int i = 0; i < depth; i++) {
 				csvOutput.write("");
@@ -58,12 +58,12 @@ public class ConvertDataToCsv {
 	 * @param nameFile
 	 *            nameFile-name file in which will write result parsing
 	 */
-	public void writeToCsvExternalLink(Set<String> externalLinks, String nameFile) {
+	public void writeToCsvExternalLink(Set<String> externalLinks, String nameFile, String title) {
 
 		CsvWriter csvOutput = null;
 		try {
 
-			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
+			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR_FOR_CSV_FILE);
 			csvOutput.write("All external links:");
 			csvOutput.endRecord();
 
