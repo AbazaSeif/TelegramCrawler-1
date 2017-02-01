@@ -3,23 +3,24 @@ package com.devcortes.service;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.api.methods.ParseMode;
-import org.telegram.telegrambots.api.methods.send.*;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-
-
+import com.devcortes.components.entity.StorageSetsLinks;
 import com.devcortes.components.service.ConvertData;
+import com.devcortes.components.service.StorageSetsLinksService;
 
 @Service
-public class TelegramService extends TelegramLongPollingBot{
-	
-	
-	
+public class TelegramService extends TelegramLongPollingBot{	
+	//@Autowired
+	CrawlerService crawlerService = new CrawlerService();
+	//@Autowired
+	ConvertData convertData = new ConvertData();
+	/*@Autowired
+	StorageSetsLinksService storageSetsLinksService;*/
 	
 	private static final String BOTTOKEN = "261462589:AAHBE65vOUd6hEIqD--QJezegwXL63JZfUk";
 	private static final String BOTUSERNAME = "java_practice_bot"; 
@@ -50,13 +51,24 @@ public class TelegramService extends TelegramLongPollingBot{
 	 */
 	@Override
 	public void onUpdateReceived(Update update) {
-		Message message = update.getMessage();
-		if (message != null && message.hasText()) {			
+		Message message = update.getMessage();		
+		if (message != null && message.hasText()) {		
+			StorageSetsLinksService storageSetsLinksService = new StorageSetsLinksService();
+			StorageSetsLinks storageSetsLinks = new StorageSetsLinks(message.getText(), 2, storageSetsLinksService.getDomain(message.getText()));
+			crawlerService.runCrawler(storageSetsLinks);
 			try {
+				convertData.convert(storageSetsLinks);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			
+			
+			/*try {
 				CrawlerService crawlerService = new CrawlerService();				
 				ConvertData convertData = new ConvertData();
 				System.out.println("Begin");
-				if(crawlerService.runCrawler(message.getText(), 2)){
+				if(crawlerService.runCrawler(){
 					convertData.setLinks(crawlerService.getSetLinks());
 				}
 				
@@ -66,7 +78,7 @@ public class TelegramService extends TelegramLongPollingBot{
 					convertData.setUrl(message.getText().replace('/', ' '));
 					convertData.convert();
 					System.out.println("End");					
-					String s = "Result in this website  " + "http://crawler.com/?url=" + message.getText();
+					String s = "Result in this website http://crawler.com/?url=" + message.getText();
 					sendMsg(message, s);
 					
 				}
@@ -87,7 +99,7 @@ public class TelegramService extends TelegramLongPollingBot{
 				
 			} catch (Exception e) {
 				e.printStackTrace();
-			}		
+			}	*/	
 		}
 		
 	}

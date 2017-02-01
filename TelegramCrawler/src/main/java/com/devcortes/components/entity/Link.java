@@ -2,15 +2,16 @@ package com.devcortes.components.entity;
 
 import java.util.Set;
 
-public class LinksList {
+public class Link {
 	private String url;
 	private Integer deph;
 	private Set<String> listUrl;
 	private String parentUrl;		
 	
-	public LinksList() {}
+	public Link() {
+	}
 	
-	public LinksList(String url, Integer deph, Set<String> listUrl, String parentUrl ){		
+	public Link(String url, Integer deph, Set<String> listUrl, String parentUrl ){		
 		this.url = url;
 		this.deph = deph;
 		this.listUrl = listUrl;

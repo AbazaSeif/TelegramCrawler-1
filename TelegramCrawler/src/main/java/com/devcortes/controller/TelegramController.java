@@ -13,7 +13,7 @@ public class TelegramController {
 	@Autowired
 	TelegramService telegramService;
 	@RequestMapping(value="/run", method = RequestMethod.GET)
-	public void runBot() throws Exception{
+	public void runBot(){
 		telegramService.initBot();			
 	}
 }
