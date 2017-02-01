@@ -6,7 +6,12 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
-
+/**
+ * Service that convert result data to txt
+ * 
+ * @author cortes
+ *
+ */
 @Service
 public class ConvertDataToTxt {
 

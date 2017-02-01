@@ -1,6 +1,5 @@
 package com.devcortes.service;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,8 +10,7 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
-import com.devcortes.components.entity.StorageResult;
-import com.devcortes.components.service.ConvertData;
+
 import com.devcortes.components.service.DomainService;
 
 /**
@@ -34,21 +32,15 @@ public class TelegramService extends TelegramLongPollingBot {
 	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
 	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
 
+	@Autowired
+	private CallCrawlerService callCrawlerService;
+
 	/**
 	 * Initialize Api Context
 	 */
 	static {
 		ApiContextInitializer.init();
 	}
-
-	@Autowired
-	private CrawlerService crawlerService;
-
-	@Autowired
-	private ConvertData convertData;
-
-	@Autowired
-	private DomainService domainService;
 
 	/**
 	 * Initialization of Api Context
@@ -88,39 +80,26 @@ public class TelegramService extends TelegramLongPollingBot {
 
 		Message message = update.getMessage();
 
-		try {
+		String key = message.getText();
 
-			String url = message.getText();
-			String domen = domainService.getDomain(url);
-
-			int accessDepth = 2;
-			StorageResult storageLinks = new StorageResult(url, accessDepth, domen);
-
-			if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(storageLinks)
-					&& !storageLinks.getParsePages().isEmpty()) {
-
-				convertData.runConvertResult(storageLinks);
+		switch (key) {
+		case REQUEST_TO_BOT_ON_HELP:
+			sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
+			break;
+		case REQUEST_TO_BOT_ON_START:
+			sendMsg(message, ANSWER_FROM_BOT_ON_START);
+			break;
+		default:
+			if (callCrawlerService.callCrawler(message.getText())) {
 				String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
 				sendMsg(message, s);
-
 			} else {
-				String key = message.getText();
-				switch (key) {
-				case REQUEST_TO_BOT_ON_HELP:
-					sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
-					break;
-				case REQUEST_TO_BOT_ON_START:
-					sendMsg(message, ANSWER_FROM_BOT_ON_START);
-					break;
-				default:
-					sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
-					break;
-				}
+				sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 			}
 
-		} catch (Exception e) {
-			log.error("Error in getDomain ---  " + e.getMessage());
+			break;
 		}
+
 	}
 
 	/**

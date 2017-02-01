@@ -8,7 +8,12 @@ import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import com.csvreader.CsvWriter;
-
+/**
+ * Service that convert result data to csv
+ * 
+ * @author cortes
+ *
+ */
 @Service
 public class ConvertDataToCsv {
 
