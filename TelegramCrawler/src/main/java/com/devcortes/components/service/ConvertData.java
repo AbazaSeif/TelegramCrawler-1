@@ -1,126 +1,163 @@
 package com.devcortes.components.service;
 
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Logger;
-
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.csvreader.CsvWriter;
-import com.devcortes.components.entity.Link;
-import com.devcortes.components.entity.StorageSetsLinks;
-import com.devcortes.service.CrawlerService;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.devcortes.components.entity.AlreadyParsedLink;
+import com.devcortes.components.entity.StorageOfLinks;
 
+/**
+ * Service that convert result data to pdf, txt, csv
+ * 
+ * @author cortes
+ *
+ */
 @Service
 public class ConvertData {
-	private static Logger log = Logger.getLogger(CrawlerService.class.getName());
-	private String path = "/var/www/crawler.com/public_html/results/";
-	private StorageSetsLinks storageSetsLinks;	
-	ConvertDataToTxtService convertTxtService = new ConvertDataToTxtService();
-	ConvertDataToPdfService convertDataToPdfService = new ConvertDataToPdfService();
-	ConvertDataToCsvService convertDataToCsvService = new ConvertDataToCsvService();
-	
-	/**
-	 * Run conversion data that get from crawler
-	 * @throws Exception
-	 */
-	public void convert(StorageSetsLinks storageSetsLinks) throws Exception{
-		this.storageSetsLinks = storageSetsLinks;
-		FileWriter writer = new FileWriter(path + storageSetsLinks.getUrl().replace('/', ' ') + ".txt", false);
-		writer.close();		
-		CsvWriter csvOutput = new CsvWriter(new FileWriter(path + storageSetsLinks.getUrl().replace('/', ' ') + ".csv", false), ',');
-		csvOutput.close();
-		showLinks();
-	
-		
-	}
-	
+
+	private static final Logger log = Logger.getLogger(ConvertData.class.getName());
+	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
+	private static final String TXT_FILE_FORMAT = ".txt";
+	private static final String CSV_FILE_FORMAT = ".csv";
+	private static final char SEPARATOR_FOR_CSV_FILE = ',';
+	private static final boolean BANAPPENDFILE = false;
+	private String fileName;
+
+	@Autowired
+	private ConvertDataToTxt convertTxtService;
+
+	@Autowired
+	private ConvertDataToPdf convertDataToPdfService;
+
+	@Autowired
+	private ConvertDataToCsv convertDataToCsvService;
 
 	/**
-	 * Conversion data
+	 * Run conversion data that get from crawler
+	 * 
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
 	 * @throws Exception
 	 */
-	public void showLinks(){
-		Link fll = new Link();
-		for (Link onceLink : storageSetsLinks.getSetLinks()) {
-			if (onceLink.getDeph() == 0) {
-				fll = onceLink;
+	public void runConvertResult(StorageOfLinks storageSetsLinks) throws Exception {
+
+		fileName = storageSetsLinks.getRootUrl().replace('/', ' ');
+		FileWriter writer = null;
+		CsvWriter csvOutput = null;
+
+		try {
+
+			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BANAPPENDFILE);
+			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BANAPPENDFILE),
+					SEPARATOR_FOR_CSV_FILE);
+
+		} finally {
+			writer.close();
+			csvOutput.close();
+		}
+		conversationData(storageSetsLinks);
+	}
+
+	/**
+	 * Conversion data into pdf, txt, csv formats
+	 * 
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @throws Exception
+	 */
+	public void conversationData(StorageOfLinks storageSetsLinks) throws Exception {
+
+		AlreadyParsedLink alreadyParsedLink = new AlreadyParsedLink();
+
+		for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+
+			int depthOfRootLink = 0;
+			if (onceLink.getCurrentDepth() == depthOfRootLink) {
+				alreadyParsedLink = onceLink;
 				break;
 			}
 		}
-		recursiveShowTXT(fll);
-		convertTxtService.writeToTxtExternalLink(storageSetsLinks.getAlienLink(), storageSetsLinks.getUrl().replace('/', ' '));
-		convertDataToPdfService.writeToPdfLinks(storageSetsLinks.getUrl().replace('/', ' '));
-		
-		//convertToCSV(fll);
-		//writeExternalLinkToCSV();
+
+		recursiveShowTXT(alreadyParsedLink, storageSetsLinks);
+		convertTxtService.writeToTxtExternalLink(storageSetsLinks.getExternalLinks(), fileName);
+		convertDataToPdfService.writeToPdfLinks(fileName);
+
+		convertToCSV(alreadyParsedLink, storageSetsLinks);
+		convertDataToCsvService.writeToCsvExternalLink(storageSetsLinks.getExternalLinks(), fileName);
 	}
-	
+
 	/**
 	 * Convert data to txt format
-	 * @param ll
+	 * 
+	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-model which store info about parsing on
+	 *            current link
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
 	 */
-	public void recursiveShowTXT(Link ll) {		
-		StringBuilder spacing = new StringBuilder();
-		for (int i = 1; i <= ll.getDeph(); i++) {			
-			spacing.append("\t");
-		}
-		
-		convertTxtService.writeToTxtLocalLink(spacing, ll.getDeph(), storageSetsLinks.getUrl(), storageSetsLinks.getUrl().replace('/', ' '));
-		
-		if (ll.getListUrl() != null) {
-			for (String url : ll.getListUrl()) {
-				Link ll1 = null;
-				for (Link onceLink : storageSetsLinks.getSetLinks()) {
-					if (onceLink.getUrl() == url) {
-						ll1 = onceLink;
+	public void recursiveShowTXT(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) {
+
+		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getCurrentDepth(), alreadyParsedLink.getCurrentUrl(),
+				fileName);
+
+		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
+
+			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
+
+				AlreadyParsedLink localAlreadyParsedLink = null;
+				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+
+					if (onceLink.getCurrentUrl() == url) {
+						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
-				if (ll1 != null) {
-					recursiveShowTXT(ll1);
+
+				if (localAlreadyParsedLink != null) {
+					recursiveShowTXT(localAlreadyParsedLink, storageSetsLinks);
 				}
 			}
 		}
 	}
-	
-	
-	
-	
-	
+
 	/**
 	 * Convert data to csv format
-	 * @param ll
+	 * 
+	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-model which store info about parsing on
+	 *            current link
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @throws Exception
 	 */
-	/*public void convertToCSV(Link ll) throws Exception{		
-		convertDataToCsvService.writeToCsvLocalLink(ll.getDeph(), storageSetsLinks.getUrl(), storageSetsLinks.getUrl().replace('/', ' '));	
-		if (ll.getListUrl() != null) {
-			for (String url : ll.getListUrl()) {
-				Link ll1 = null;
-				for (Link onceLink : storageSetsLinks.getSetLinks()) {
-					if (onceLink.getUrl() == url) {
-						ll1 = onceLink;
+	public void convertToCSV(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) throws Exception {
+
+		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getCurrentDepth(),
+				alreadyParsedLink.getCurrentUrl(), fileName);
+
+		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
+
+			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
+
+				AlreadyParsedLink localAlreadyParsedLink = null;
+
+				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
+
+					if (onceLink.getCurrentUrl() == url) {
+						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
-				if (ll1 != null) {
-					convertToCSV(ll1);
+
+				if (localAlreadyParsedLink != null) {
+					convertToCSV(localAlreadyParsedLink, storageSetsLinks);
 				}
 			}
 		}
-		
-	}*/
-	
-	
-	
 
-	
-	
+	}
+
 }

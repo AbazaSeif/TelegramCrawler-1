@@ -1,5 +1,8 @@
 package com.devcortes.service;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
@@ -9,40 +12,61 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-import com.devcortes.components.entity.StorageSetsLinks;
+import com.devcortes.components.entity.StorageOfLinks;
 import com.devcortes.components.service.ConvertData;
-import com.devcortes.components.service.StorageSetsLinksService;
+import com.devcortes.components.service.DomainService;
 
+/**
+ * Service that manage telegram bot
+ * 
+ * @author cortes
+ *
+ */
 @Service
-public class TelegramService extends TelegramLongPollingBot{	
-	//@Autowired
-	CrawlerService crawlerService = new CrawlerService();
-	//@Autowired
-	ConvertData convertData = new ConvertData();
-	/*@Autowired
-	StorageSetsLinksService storageSetsLinksService;*/
-	
+public class TelegramService extends TelegramLongPollingBot {
+
+	@Autowired
+	private CrawlerService crawlerService;
+	@Autowired
+	private ConvertData convertData;
+	@Autowired
+	private DomainService domainService;
+
+	private static final Logger log = Logger.getLogger(DomainService.class);
 	private static final String BOTTOKEN = "261462589:AAHBE65vOUd6hEIqD--QJezegwXL63JZfUk";
-	private static final String BOTUSERNAME = "java_practice_bot"; 
-	
-	static{
+	private static final String BOTUSERNAME = "java_practice_bot";
+	private static final String FIRST_PART_OF_ANSWER_BOT = "Result in this website  http://crawler.com/?url=";
+	private static final String REQUEST_TO_BOT_ON_HELP = "/help";
+	private static final String REQUEST_TO_BOT_ON_START = "/start";
+	private static final String ANSWER_FROM_BOT_ON_HELP = "Hello, my name is Cortesbot";
+	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
+	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
+
+	/**
+	 * Initialize Api Context
+	 */
+	static {
 		ApiContextInitializer.init();
 	}
-	
-	public void initBot(){
-		
+
+	/**
+	 * Initialization of Api Context
+	 */
+	public void initBot() {
+
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 		try {
-			telegramBotsApi.registerBot(new TelegramService());
+			telegramBotsApi.registerBot(this);
 		} catch (TelegramApiException e) {
-			e.printStackTrace();
+			log.error("Error in getDomain ---  " + e.getMessage());
 		}
 	}
+
 	/**
 	 * This method must always return Bot username
 	 */
 	@Override
-	public String getBotUsername() {		
+	public String getBotUsername() {
 		return BOTUSERNAME;
 	}
 
@@ -51,57 +75,41 @@ public class TelegramService extends TelegramLongPollingBot{
 	 */
 	@Override
 	public void onUpdateReceived(Update update) {
-		Message message = update.getMessage();		
-		if (message != null && message.hasText()) {		
-			StorageSetsLinksService storageSetsLinksService = new StorageSetsLinksService();
-			StorageSetsLinks storageSetsLinks = new StorageSetsLinks(message.getText(), 2, storageSetsLinksService.getDomain(message.getText()));
-			crawlerService.runCrawler(storageSetsLinks);
+
+		Message message = update.getMessage();
+		if (message != null && message.hasText()) {
+
 			try {
-				convertData.convert(storageSetsLinks);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			
-			
-			
-			/*try {
-				CrawlerService crawlerService = new CrawlerService();				
-				ConvertData convertData = new ConvertData();
-				System.out.println("Begin");
-				if(crawlerService.runCrawler(){
-					convertData.setLinks(crawlerService.getSetLinks());
-				}
-				
-				if(convertData.getLinks() != null){
-					convertData.setAlienLink(crawlerService.getAlienLink());
-					
-					convertData.setUrl(message.getText().replace('/', ' '));
-					convertData.convert();
-					System.out.println("End");					
-					String s = "Result in this website http://crawler.com/?url=" + message.getText();
+				String url = message.getText();
+				String domen = domainService.getDomain(url);
+				StorageOfLinks storageSetsLinks = new StorageOfLinks(url, 2, domen);
+				if (!StringUtils.isEmpty(domen) && crawlerService.runCrawler(storageSetsLinks, domainService)
+						&& !storageSetsLinks.getAlreadyParsedLinksWithRootDomain().isEmpty()) {
+
+					convertData.runConvertResult(storageSetsLinks);
+					String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
 					sendMsg(message, s);
-					
-				}
-				else{
+
+				} else {
 					String key = message.getText();
 					switch (key) {
-					case "/help":
-						sendMsg(message, "Hello, my name is Cortesbot");
+					case REQUEST_TO_BOT_ON_HELP:
+						sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
 						break;
-					case "/start":
-						sendMsg(message, "I'm working");
+					case REQUEST_TO_BOT_ON_START:
+						sendMsg(message, ANSWER_FROM_BOT_ON_START);
 						break;
-					default:						
-						sendMsg(message, "I don`t know how answer to you");
+					default:
+						sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 						break;
 					}
 				}
-				
+
 			} catch (Exception e) {
-				e.printStackTrace();
-			}	*/	
+				log.error("Error in getDomain ---  " + e.getMessage());
+			}
 		}
-		
+
 	}
 
 	/**
@@ -111,16 +119,17 @@ public class TelegramService extends TelegramLongPollingBot{
 	public String getBotToken() {
 		return BOTTOKEN;
 	}
-	
+
 	private void sendMsg(Message message, String text) {
+
 		SendMessage sendMessage = new SendMessage();
 		sendMessage.enableMarkdown(false);
-		sendMessage.setChatId(message.getChatId().toString());		
+		sendMessage.setChatId(message.getChatId().toString());
 		sendMessage.setText(text);
 		try {
 			sendMessage(sendMessage);
 		} catch (TelegramApiException e) {
-			e.printStackTrace();
+			log.error("Error in sendMsg ---  " + e.getMessage());
 		}
 	}
 }

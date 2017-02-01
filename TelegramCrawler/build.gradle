@@ -27,6 +27,7 @@ repositories {
 
 
 dependencies {
+	compile 'org.apache.commons:commons-lang3:3.5'
 	compile group: 'org.telegram', name: 'telegrambots', version: '2.4.4.4'
 	compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
 	compile group: 'com.itextpdf', name: 'itextpdf', version: '5.0.6'
