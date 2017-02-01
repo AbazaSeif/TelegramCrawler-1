@@ -30,8 +30,6 @@ public class ConvertData {
 	private static final boolean BANAPPENDFILE = false;
 	private String fileName;
 
-	
-
 	@Autowired
 	private ConvertDataToTxt convertTxtService;
 
@@ -44,6 +42,8 @@ public class ConvertData {
 	/**
 	 * Run conversion data that get from crawler
 	 * 
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
 	 * @throws Exception
 	 */
 	public void runConvertResult(StorageOfLinks storageSetsLinks) throws Exception {
@@ -51,37 +51,40 @@ public class ConvertData {
 		fileName = storageSetsLinks.getRootUrl().replace('/', ' ');
 		FileWriter writer = null;
 		CsvWriter csvOutput = null;
-		
+
 		try {
-			
+
 			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BANAPPENDFILE);
-			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BANAPPENDFILE), SEPARATOR_FOR_CSV_FILE);
-			
+			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BANAPPENDFILE),
+					SEPARATOR_FOR_CSV_FILE);
+
 		} finally {
-			writer.close();			
+			writer.close();
 			csvOutput.close();
-		}		
+		}
 		conversationData(storageSetsLinks);
 	}
 
 	/**
 	 * Conversion data into pdf, txt, csv formats
 	 * 
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
 	 * @throws Exception
 	 */
 	public void conversationData(StorageOfLinks storageSetsLinks) throws Exception {
-		
+
 		AlreadyParsedLink alreadyParsedLink = new AlreadyParsedLink();
-		
+
 		for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
-			
+
 			int depthOfRootLink = 0;
 			if (onceLink.getCurrentDepth() == depthOfRootLink) {
 				alreadyParsedLink = onceLink;
 				break;
 			}
 		}
-		
+
 		recursiveShowTXT(alreadyParsedLink, storageSetsLinks);
 		convertTxtService.writeToTxtExternalLink(storageSetsLinks.getExternalLinks(), fileName);
 		convertDataToPdfService.writeToPdfLinks(fileName);
@@ -94,25 +97,29 @@ public class ConvertData {
 	 * Convert data to txt format
 	 * 
 	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-model which store info about parsing on
+	 *            current link
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
 	 */
 	public void recursiveShowTXT(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) {
-		
+
 		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getCurrentDepth(), alreadyParsedLink.getCurrentUrl(),
 				fileName);
-		
+
 		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
-			
+
 			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
-				
+
 				AlreadyParsedLink localAlreadyParsedLink = null;
 				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
-					
+
 					if (onceLink.getCurrentUrl() == url) {
 						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
-				
+
 				if (localAlreadyParsedLink != null) {
 					recursiveShowTXT(localAlreadyParsedLink, storageSetsLinks);
 				}
@@ -124,26 +131,31 @@ public class ConvertData {
 	 * Convert data to csv format
 	 * 
 	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-model which store info about parsing on
+	 *            current link
+	 * @param storageSetsLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @throws Exception
 	 */
 	public void convertToCSV(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageSetsLinks) throws Exception {
-		
+
 		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getCurrentDepth(),
 				alreadyParsedLink.getCurrentUrl(), fileName);
-		
+
 		if (!alreadyParsedLink.getSetLinksOnCurrentUrl().isEmpty()) {
-			
+
 			for (String url : alreadyParsedLink.getSetLinksOnCurrentUrl()) {
-				
+
 				AlreadyParsedLink localAlreadyParsedLink = null;
-				
+
 				for (AlreadyParsedLink onceLink : storageSetsLinks.getAlreadyParsedLinksWithRootDomain()) {
-					
+
 					if (onceLink.getCurrentUrl() == url) {
 						localAlreadyParsedLink = onceLink;
 						break;
 					}
 				}
-				
+
 				if (localAlreadyParsedLink != null) {
 					convertToCSV(localAlreadyParsedLink, storageSetsLinks);
 				}
@@ -152,5 +164,4 @@ public class ConvertData {
 
 	}
 
-	
 }

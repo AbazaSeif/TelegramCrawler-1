@@ -18,20 +18,30 @@ public class ConvertDataToCsv {
 	private static final char SEPARATOR = ',';
 	private boolean permissionAppendFile = true;
 
+	/**
+	 * Write to csv file all links which have root domain
+	 * 
+	 * @param depth
+	 *            depth-depth of parsing current link
+	 * @param url
+	 *            url-current url
+	 * @param nameFile
+	 *            nameFile-name file in which will write result parsing
+	 */
 	public void writeToCsvLocalLink(int depth, String url, String nameFile) {
-		
+
 		CsvWriter csvOutput = null;
 		try {
-			
+
 			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
-			
+
 			for (int i = 0; i < depth; i++) {
 				csvOutput.write("");
 			}
-			
+
 			csvOutput.write(url);
-			csvOutput.endRecord();	
-			
+			csvOutput.endRecord();
+
 		} catch (IOException e) {
 			log.error("Error in writeToCsvLocalLink ---  " + e.getMessage());
 		} finally {
@@ -39,26 +49,34 @@ public class ConvertDataToCsv {
 		}
 	}
 
-	public void writeToCsvExternalLink(Set<String> alienLink, String nameFile) {
-		
+	/**
+	 * Append to result csv file all external links which will meet in websites
+	 * 
+	 * @param externalLinks
+	 *            externalLinks-all external links which will meet in websites
+	 *            which will parse
+	 * @param nameFile
+	 *            nameFile-name file in which will write result parsing
+	 */
+	public void writeToCsvExternalLink(Set<String> externalLinks, String nameFile) {
+
 		CsvWriter csvOutput = null;
 		try {
-			
+
 			csvOutput = new CsvWriter(new FileWriter(PATH + nameFile + CSV, permissionAppendFile), SEPARATOR);
 			csvOutput.write("All external links:");
 			csvOutput.endRecord();
-			
-			for (String string : alienLink) {
+
+			for (String string : externalLinks) {
 				csvOutput.write(string);
 				csvOutput.endRecord();
 			}
-			
+
 			csvOutput.close();
-			
+
 		} catch (Exception e) {
 			log.error("Error in writeExternalLinkToCSV ---  " + e.getMessage());
-		}
-		finally {
+		} finally {
 			csvOutput.close();
 		}
 	}

@@ -26,9 +26,11 @@ public class CrawlerService {
 	/**
 	 * It's method that run crawler for url with some deph.
 	 * 
-	 * @param url
-	 * @param deph
-	 * @throws Exception
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @param domainService
+	 *            domainService-domain links which will parse
+	 * @return
 	 */
 	public boolean runCrawler(StorageOfLinks storageOfLinks, DomainService domainService) {
 
@@ -55,8 +57,12 @@ public class CrawlerService {
 	/**
 	 * It's recursive method for parse links.
 	 * 
-	 * @param listLink
-	 * @param deph
+	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-set links which will parse
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @param domainService
+	 *            domainService-domain links which will parse
 	 * @throws IOException
 	 */
 	public void recursiveCrawl(AlreadyParsedLink alreadyParsedLink, StorageOfLinks storageOfLinks,
@@ -85,8 +91,12 @@ public class CrawlerService {
 	 * It's method that return list links for given url;
 	 * 
 	 * @param urlsend
+	 *            urlsend-link for parsing
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @param domainService
+	 *            domainService-domain links which will parse
 	 * @return
-	 * @throws IOException
 	 */
 	public boolean returnURL(String urlsend, StorageOfLinks storageOfLinks, DomainService domainService) {
 
