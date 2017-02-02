@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.devcortes.components.entity.ParsePage;
 import com.devcortes.components.entity.StorageResult;
 import com.devcortes.components.service.DomainService;
+import com.devcortes.components.service.exception.NotParsePageException;
 
 /**
  * Service that perform parsing website
@@ -48,7 +49,7 @@ public class CrawlerService {
 
 		try {
 			fillURLs(storageResult, parsePage);
-		} catch (RuntimeException e) {
+		} catch (NotParsePageException e) {
 			storageResult.getNotParsedLinks().add(storageResult.getUrl());
 			storageResult.getParsePages().add(parsePage);
 			return false;
@@ -90,7 +91,7 @@ public class CrawlerService {
 			
 			try {
 				fillURLs(storageResult, localAlreadyParsedLink);
-			} catch (RuntimeException e) {
+			} catch (NotParsePageException e) {
 				storageResult.getNotParsedLinks().add(localAlreadyParsedLink.getUrl());							
 			}
 
@@ -122,9 +123,9 @@ public class CrawlerService {
 		Document doc = null;
 		try {
 			doc = Jsoup.connect(parsePage.getUrl()).get();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			log.error("fillURLs ---  " + e.getMessage());
-			throw new RuntimeException(e);
+			throw new NotParsePageException();
 		}
 
 		if (doc != null) {

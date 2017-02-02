@@ -1,5 +1,6 @@
 package com.devcortes.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,8 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import com.devcortes.components.service.DomainService;
+import com.devcortes.components.service.StorageFilesDAO;
+import com.mysql.jdbc.Messages;
 
 /**
  * Service that manage telegram bot
@@ -31,9 +34,21 @@ public class TelegramService extends TelegramLongPollingBot {
 	private static final String ANSWER_FROM_BOT_ON_HELP = "Hello, my name is Cortesbot";
 	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
 	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
+	private static final String PARSE_PAGE = "yes";
+	private static final String GET_INFO_FROM_DB = "no";
+	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
+
+	private String urlFromTelegram;
+	private Message oldMessage;
+
+	@Autowired
+	private StorageFilesService storageFilesService;
 
 	@Autowired
 	private CallCrawlerService callCrawlerService;
+
+	@Autowired
+	private DomainService domainService;
 
 	/**
 	 * Initialize Api Context
@@ -90,10 +105,30 @@ public class TelegramService extends TelegramLongPollingBot {
 			sendMsg(message, ANSWER_FROM_BOT_ON_START);
 			break;
 		default:
-			if (callCrawlerService.callCrawler(message.getText())) {
-				String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
-				sendMsg(message, s);
+
+			urlFromTelegram = message.getText();
+
+			if (!StringUtils.isBlank(domainService.getDomain(urlFromTelegram))
+					&& storageFilesService.urlIsExistInDB(urlFromTelegram)) {
+
+				sendMsg(message, "Do you want wait some time or get information quickly (yes/no)?");
+
+				if (message.getText().equals(PARSE_PAGE)) {
+
+					if (callCrawlerService.callCrawler(message.getText())) {
+
+						String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
+						sendMsg(message, s);
+
+					} else {
+						sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
+					}
+				} else {
+					storageFilesService.getByUrl(PATH_TO_RESULT_FILE, urlFromTelegram);
+				}
+
 			} else {
+
 				sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 			}
 

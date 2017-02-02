@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import com.csvreader.CsvWriter;
 import com.devcortes.components.entity.ParsePage;
 import com.devcortes.components.entity.StorageResult;
+import com.devcortes.service.StorageFilesService;
+
 /**
  * Service that convert result data to pdf, txt, csv
  * 
@@ -15,7 +17,7 @@ import com.devcortes.components.entity.StorageResult;
  */
 @Service
 public class ConvertData {
-	
+
 	private static final Logger log = Logger.getLogger(ConvertData.class.getName());
 	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
 	private static final String TXT_FILE_FORMAT = ".txt";
@@ -24,7 +26,7 @@ public class ConvertData {
 	private static final boolean BAN_TO_APPEND_FILE = false;
 	private static final String TITLE_TO_FILE_EXTERNAL_LINKS = "All external links:";
 	private static final String TITLE_TO_FILE_NOTPARSED_LINKS = "All not parsed links:";
-	
+
 	private String fileName;
 
 	@Autowired
@@ -35,6 +37,9 @@ public class ConvertData {
 
 	@Autowired
 	private ConvertDataToCsv convertDataToCsvService;
+
+	@Autowired
+	private StorageFilesService storageFilesService;
 
 	/**
 	 * Run conversion data that get from crawler
@@ -52,7 +57,8 @@ public class ConvertData {
 		try {
 
 			writer = new FileWriter(PATH_TO_RESULT_FILE + fileName + TXT_FILE_FORMAT, BAN_TO_APPEND_FILE);
-			csvOutput = new CsvWriter(new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BAN_TO_APPEND_FILE),
+			csvOutput = new CsvWriter(
+					new FileWriter(PATH_TO_RESULT_FILE + fileName + CSV_FILE_FORMAT, BAN_TO_APPEND_FILE),
 					SEPARATOR_FOR_CSV_FILE);
 
 		} finally {
@@ -83,14 +89,20 @@ public class ConvertData {
 		}
 
 		recursiveShowTXT(alreadyParsedLink, storageResult);
-		convertTxtService.writeToTxtExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_EXTERNAL_LINKS);
-		convertTxtService.writeToTxtExternalLink(storageResult.getNotParsedLinks(), fileName, TITLE_TO_FILE_NOTPARSED_LINKS);
-	
+		convertTxtService.writeToTxtExternalLink(storageResult.getExternalLinks(), fileName,
+				TITLE_TO_FILE_EXTERNAL_LINKS);
+		convertTxtService.writeToTxtExternalLink(storageResult.getNotParsedLinks(), fileName,
+				TITLE_TO_FILE_NOTPARSED_LINKS);
+
 		convertDataToPdfService.writeToPdfLinks(fileName);
 
 		convertToCSV(alreadyParsedLink, storageResult);
-		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_EXTERNAL_LINKS);
-		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName, TITLE_TO_FILE_NOTPARSED_LINKS);
+		convertDataToCsvService.writeToCsvExternalLink(storageResult.getExternalLinks(), fileName,
+				TITLE_TO_FILE_EXTERNAL_LINKS);
+		convertDataToCsvService.writeToCsvExternalLink(storageResult.getNotParsedLinks(), fileName,
+				TITLE_TO_FILE_NOTPARSED_LINKS);
+		
+		storageFilesService.add(PATH_TO_RESULT_FILE, storageResult.getUrl());
 	}
 
 	/**
@@ -103,9 +115,8 @@ public class ConvertData {
 	 *            storageOfLinks-model where store results of parsing
 	 */
 	public void recursiveShowTXT(ParsePage alreadyParsedLink, StorageResult storageResult) {
-		
-		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getDepth(), alreadyParsedLink.getUrl(),
-				fileName);
+
+		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getDepth(), alreadyParsedLink.getUrl(), fileName);
 
 		if (!alreadyParsedLink.getLocalLinks().isEmpty()) {
 
@@ -139,8 +150,7 @@ public class ConvertData {
 	 */
 	public void convertToCSV(ParsePage alreadyParsedLink, StorageResult storageResult) throws Exception {
 
-		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getDepth(),
-				alreadyParsedLink.getUrl(), fileName);
+		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getDepth(), alreadyParsedLink.getUrl(), fileName);
 
 		if (!alreadyParsedLink.getLocalLinks().isEmpty()) {
 
