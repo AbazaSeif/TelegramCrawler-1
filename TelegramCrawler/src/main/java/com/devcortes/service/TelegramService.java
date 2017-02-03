@@ -1,8 +1,12 @@
 package com.devcortes.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
@@ -14,7 +18,6 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import com.devcortes.components.service.DomainService;
 import com.devcortes.components.service.StorageFilesDAO;
-import com.mysql.jdbc.Messages;
 
 /**
  * Service that manage telegram bot
@@ -23,6 +26,7 @@ import com.mysql.jdbc.Messages;
  *
  */
 @Service
+@Scope(scopeName="prototype")
 public class TelegramService extends TelegramLongPollingBot {
 
 	private static final Logger log = Logger.getLogger(DomainService.class);
@@ -34,12 +38,17 @@ public class TelegramService extends TelegramLongPollingBot {
 	private static final String ANSWER_FROM_BOT_ON_HELP = "Hello, my name is Cortesbot";
 	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
 	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
-	private static final String PARSE_PAGE = "yes";
+	private static final String PARSE_PAGE = "yes";	
 	private static final String GET_INFO_FROM_DB = "no";
 	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
+	private static final String QUESTION_FOR_USER = "I have already parsed resultsCan you want wait some time or you want get information quickly (yes/no)?";
+	private static final String PLEASE_WAIT = "Please wait........";
+
+	private Map<Long, String> lastMessagesOfUsers;
 
 	private String urlFromTelegram;
-	private Message oldMessage;
+	private boolean requestFromBot;
+	
 
 	@Autowired
 	private StorageFilesService storageFilesService;
@@ -62,6 +71,7 @@ public class TelegramService extends TelegramLongPollingBot {
 	 */
 	public void initBot() {
 
+		lastMessagesOfUsers = new HashMap<>();
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 		try {
 			telegramBotsApi.registerBot(this);
@@ -97,6 +107,28 @@ public class TelegramService extends TelegramLongPollingBot {
 
 		String key = message.getText();
 
+		urlFromTelegram = message.getText();
+
+		Long chatId = message.getChatId();
+
+		if (!StringUtils.isBlank(domainService.getDomain(urlFromTelegram))) {
+			
+			lastMessagesOfUsers.put(chatId, message.getText());
+			
+			if(storageFilesService.urlIsExistInDB(urlFromTelegram)){
+				requestFromBot = true;
+			}else{
+				requestFromBot = false;
+				key = PARSE_PAGE;
+			}		
+		}
+
+		if (requestFromBot) {
+			sendMsg(message, QUESTION_FOR_USER);
+			requestFromBot = false;
+			return;
+		}
+
 		switch (key) {
 		case REQUEST_TO_BOT_ON_HELP:
 			sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
@@ -104,33 +136,27 @@ public class TelegramService extends TelegramLongPollingBot {
 		case REQUEST_TO_BOT_ON_START:
 			sendMsg(message, ANSWER_FROM_BOT_ON_START);
 			break;
-		default:
+		case PARSE_PAGE:
+			
+			sendMsg(message, PLEASE_WAIT);
+			if (callCrawlerService.callCrawler(lastMessagesOfUsers.get(chatId))) {
 
-			urlFromTelegram = message.getText();
-
-			if (!StringUtils.isBlank(domainService.getDomain(urlFromTelegram))
-					&& storageFilesService.urlIsExistInDB(urlFromTelegram)) {
-
-				sendMsg(message, "Do you want wait some time or get information quickly (yes/no)?");
-
-				if (message.getText().equals(PARSE_PAGE)) {
-
-					if (callCrawlerService.callCrawler(message.getText())) {
-
-						String s = FIRST_PART_OF_ANSWER_BOT + message.getText();
-						sendMsg(message, s);
-
-					} else {
-						sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
-					}
-				} else {
-					storageFilesService.getByUrl(PATH_TO_RESULT_FILE, urlFromTelegram);
-				}
+				String s = FIRST_PART_OF_ANSWER_BOT + lastMessagesOfUsers.get(chatId);
+				sendMsg(message, s);
 
 			} else {
-
 				sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 			}
+			
+			break;
+		case GET_INFO_FROM_DB:
+			storageFilesService.getByUrl(PATH_TO_RESULT_FILE, lastMessagesOfUsers.get(chatId));
+			String s = FIRST_PART_OF_ANSWER_BOT + lastMessagesOfUsers.get(chatId);
+			sendMsg(message, s);
+			break;
+		default:
+
+			sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 
 			break;
 		}
