@@ -1,99 +1,105 @@
 package com.devcortes.service;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Logger;
-
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.devcortes.components.entity.LinksList;
+import com.devcortes.components.entity.ParsePage;
+import com.devcortes.components.entity.StorageResult;
+import com.devcortes.components.service.DomainService;
+import com.devcortes.components.service.exception.NotParsePageException;
+
+/**
+ * Service that perform parsing website
+ * 
+ * @author cortes
+ *
+ */
 
 @Service
 public class CrawlerService {
+
 	private static Logger log = Logger.getLogger(CrawlerService.class.getName());
-	private String mainDomain;
-	private Integer globalDeph;
-	private Set<LinksList> setLinks;
-	private Set<String> allSetLink;
-	private Set<String> alienLink;
-	private Set<String> localSet;
+	private static final String HTML_LINK_TAG = "a";
+	private static final String SELECT_URL_FROM_HTML_LINK_TAG = "abs:href";
+
+	@Autowired
+	private DomainService domainService;
+
 	/**
 	 * It's method that run crawler for url with some deph.
 	 * 
-	 * @param url
-	 * @param deph
-	 * @throws Exception
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 *
+	 * @return true-when result parsing is successful 
+	 *    	   false-when result parsing is not successful
 	 */
-	public boolean runCrawler(String url, Integer deph) {
-		setLinks = new HashSet<>();
-		allSetLink = new HashSet<>();
-		alienLink = new HashSet<>();
-		globalDeph = deph;
-		mainDomain = getDomain(url);
-		Set<String> fListURL = null;
-		if(returnURL(url)){
-			fListURL = localSet;
+	public boolean runCrawler(StorageResult storageResult) {
+
+	    int accessDepth = 0;
+	    
+		ParsePage parsePage = new ParsePage(storageResult.getUrl(), accessDepth, "");
+
+		try {
+			fillURLs(storageResult, parsePage);
+		} catch (NotParsePageException e) {
+			storageResult.getNotParsedLinks().add(storageResult.getUrl());
+			storageResult.getParsePages().add(parsePage);
+			return false;
 		}
-		if (fListURL != null) {
-			LinksList ll = new LinksList(url, 0, fListURL, "");
-			setLinks.add(ll);
-			try {
-				recursiveCrawl(ll, 0);
-			} catch (IOException e) {
-				log.info("RunCrawler ---  " + e.getMessage());
-			}
-			return true;
-		} else {
+		
+
+		if (parsePage.getLocalLinks().isEmpty()) {
 			return false;
 		}
 
-	}
+		storageResult.getParsePages().add(parsePage);
 
-	/**
-	 * It's method that search main domain from general url;
-	 * 
-	 * @param url
-	 * @return
-	 * @throws MalformedURLException
-	 */
-	public String getDomain(String url) {
-		String domen = null;
 		try {
-			URL nURL = new URL(url);
-			domen = nURL.getHost();
-			domen = domen.startsWith("www.") ? domen.substring(4) : domen;
-
-		} catch (MalformedURLException e) {
-			log.info("GetDomain ---  " + e.getMessage());
+			recursiveCrawl(parsePage, storageResult);
+		} catch (IOException e) {
+			log.error("RunCrawler ---  " + e.getMessage());
 		}
-		return domen;
+		return true;
+
 	}
 
 	/**
 	 * It's recursive method for parse links.
 	 * 
-	 * @param listLink
-	 * @param deph
+	 * @param alreadyParsedLink
+	 *            alreadyParsedLink-set links which will parse
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @param domainService
+	 *            domainService-domain links which will parse
 	 * @throws IOException
 	 */
-	public void recursiveCrawl(LinksList listLink, int deph) throws IOException {
-		deph++;
-		for (String link : listLink.getListUrl()) {
-			Set<String> recurSive = null;
-			if(returnURL(link)){
-				recurSive = localSet;
+	public void recursiveCrawl(ParsePage parsePage, StorageResult storageResult) throws IOException {
+
+		for (String parseLink : parsePage.getLocalLinks()) {
+
+			ParsePage localAlreadyParsedLink = new ParsePage(parseLink, parsePage.getDepth() + 1,
+					parsePage.getUrl());			
+			
+			try {
+				fillURLs(storageResult, localAlreadyParsedLink);
+			} catch (NotParsePageException e) {
+				storageResult.getNotParsedLinks().add(localAlreadyParsedLink.getUrl());							
 			}
-			LinksList ll = new LinksList(link, deph, recurSive, listLink.getUrl());
-			setLinks.add(ll);
-			if (recurSive != null && deph < globalDeph) {
-				recursiveCrawl(ll, deph);
+
+			storageResult.getParsePages().add(localAlreadyParsedLink);
+
+			if (!parsePage.getLocalLinks().isEmpty()
+					&& localAlreadyParsedLink.getDepth() < storageResult.getAccessDepth()) {
+				recursiveCrawl(localAlreadyParsedLink, storageResult);
 			}
 		}
 	}
@@ -102,80 +108,44 @@ public class CrawlerService {
 	 * It's method that return list links for given url;
 	 * 
 	 * @param urlsend
-	 * @return
-	 * @throws IOException
+	 *            urlsend-link for parsing
+	 * @param storageOfLinks
+	 *            storageOfLinks-model where store results of parsing
+	 * @param domainService
+	 *            domainService-domain links which will parse
 	 */
-	public boolean returnURL(String urlsend) {	
-		localSet = null;
-		if (urlsend != null && !urlsend.isEmpty()) {
-			String localDomain;
-			localSet = new HashSet<>();
-			try {
-				Document doc = Jsoup.connect(urlsend).get();
-				if (doc != null) {
-					Elements links = doc.select("a");
-					String finalString;
-					for (Element e : links) {
-						finalString = e.attr("abs:href");
-						localDomain = getDomain(finalString);
-						if (localDomain.equals(mainDomain)) {
-							if (!allSetLink.contains(finalString)) {
-								localSet.add(finalString);
-								allSetLink.add(finalString);
-							}
-						} else {
-							alienLink.add(finalString);
-							allSetLink.add(finalString);
-						}
-					}
-				}
-			} catch (Exception e) {
-				log.info("ReturnURL ---  " + e.getMessage());
-			}
+	public void fillURLs(StorageResult storageResult, ParsePage parsePage) {
 
-			allSetLink.add(urlsend);
-
-			if (!localSet.isEmpty()) {
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
+		if (StringUtils.isBlank(parsePage.getUrl())) {
+			return;
 		}
 
-	}
+		Document doc = null;
+		try {
+			doc = Jsoup.connect(parsePage.getUrl()).get();
+		} catch (IOException e) {
+			log.error("fillURLs ---  " + e.getMessage());
+			throw new NotParsePageException();
+		}
 
-	public String getMainDomain() {
-		return mainDomain;
-	}
+		if (doc != null) {
+			Elements links = doc.select(HTML_LINK_TAG);
+			String finalString;
 
-	public void setMainDomain(String mainDomain) {
-		this.mainDomain = mainDomain;
-	}
-
-	public Set<LinksList> getSetLinks() {
-		return setLinks;
-	}
-
-	public void setSetLinks(Set<LinksList> setLinks) {
-		this.setLinks = setLinks;
-	}
-
-	public Set<String> getAllSetLink() {
-		return allSetLink;
-	}
-
-	public void setAllSetLink(Set<String> allSetLink) {
-		this.allSetLink = allSetLink;
-	}
-
-	public Set<String> getAlienLink() {
-		return alienLink;
-	}
-
-	public void setAlienLink(Set<String> alienLink) {
-		this.alienLink = alienLink;
+			for (Element e : links) {
+			
+				finalString = e.attr(SELECT_URL_FROM_HTML_LINK_TAG);
+				String localDomain = domainService.getDomain(finalString);
+				
+				if (localDomain.equals(storageResult.getDomain())) {
+					parsePage.getLocalLinks().add(finalString);
+				} else {
+					storageResult.getExternalLinks().add(finalString);
+				}
+				storageResult.getUniqeuLinks().add(finalString);
+			}
+		}
+		storageResult.getUniqeuLinks().add(parsePage.getUrl());
 	}
 
 }

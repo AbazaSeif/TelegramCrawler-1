@@ -1,95 +1,92 @@
 package com.devcortes.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.api.methods.ParseMode;
-import org.telegram.telegrambots.api.methods.send.*;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
+import com.devcortes.components.service.DomainService;
+import com.devcortes.components.service.StorageFilesDAO;
 
-
-import com.devcortes.components.service.ConvertData;
-
+/**
+ * Service that manage telegram bot
+ * 
+ * @author cortes
+ *
+ */
 @Service
-public class TelegramService extends TelegramLongPollingBot{
-	
-	
-	
-	
+@Scope(scopeName="prototype")
+public class TelegramService extends TelegramLongPollingBot {
+
+	private static final Logger log = Logger.getLogger(DomainService.class);
 	private static final String BOTTOKEN = "261462589:AAHBE65vOUd6hEIqD--QJezegwXL63JZfUk";
-	private static final String BOTUSERNAME = "java_practice_bot"; 
+	private static final String BOTUSERNAME = "java_practice_bot";
+	private static final String FIRST_PART_OF_ANSWER_BOT = "Result in this website  http://crawler.com/?url=";
+	private static final String REQUEST_TO_BOT_ON_HELP = "/help";
+	private static final String REQUEST_TO_BOT_ON_START = "/start";
+	private static final String ANSWER_FROM_BOT_ON_HELP = "Hello, my name is Cortesbot";
+	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
+	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
+	private static final String PARSE_PAGE = "yes";	
+	private static final String GET_INFO_FROM_DB = "no";
+	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
+	private static final String QUESTION_FOR_USER = "I have already parsed resultsCan you want wait some time or you want get information quickly (yes/no)?";
+	private static final String PLEASE_WAIT = "Please wait........";
+
+	private Map<Long, String> lastMessagesOfUsers;
+
+	private String urlFromTelegram;
+	private boolean requestFromBot;
 	
-	static{
+
+	@Autowired
+	private StorageFilesService storageFilesService;
+
+	@Autowired
+	private CallCrawlerService callCrawlerService;
+
+	@Autowired
+	private DomainService domainService;
+
+	/**
+	 * Initialize Api Context
+	 */
+	static {
 		ApiContextInitializer.init();
 	}
-	
-	public void initBot(){
-		
+
+	/**
+	 * Initialization of Api Context
+	 */
+	public void initBot() {
+
+		lastMessagesOfUsers = new HashMap<>();
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 		try {
-			telegramBotsApi.registerBot(new TelegramService());
+			telegramBotsApi.registerBot(this);
 		} catch (TelegramApiException e) {
-			e.printStackTrace();
+			log.error("Error in getDomain ---  " + e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
+
 	/**
 	 * This method must always return Bot username
 	 */
 	@Override
-	public String getBotUsername() {		
+	public String getBotUsername() {
 		return BOTUSERNAME;
-	}
-
-	/**
-	 * This method will be called when an Update is received by your bot
-	 */
-	@Override
-	public void onUpdateReceived(Update update) {
-		Message message = update.getMessage();
-		if (message != null && message.hasText()) {			
-			try {
-				CrawlerService crawlerService = new CrawlerService();				
-				ConvertData convertData = new ConvertData();
-				System.out.println("Begin");
-				if(crawlerService.runCrawler(message.getText(), 2)){
-					convertData.setLinks(crawlerService.getSetLinks());
-				}
-				
-				if(convertData.getLinks() != null){
-					convertData.setAlienLink(crawlerService.getAlienLink());
-					
-					convertData.setUrl(message.getText().replace('/', ' '));
-					convertData.convert();
-					System.out.println("End");					
-					String s = "Result in this website  " + "http://crawler.com/?url=" + message.getText();
-					sendMsg(message, s);
-					
-				}
-				else{
-					String key = message.getText();
-					switch (key) {
-					case "/help":
-						sendMsg(message, "Hello, my name is Cortesbot");
-						break;
-					case "/start":
-						sendMsg(message, "I'm working");
-						break;
-					default:						
-						sendMsg(message, "I don`t know how answer to you");
-						break;
-					}
-				}
-				
-			} catch (Exception e) {
-				e.printStackTrace();
-			}		
-		}
-		
 	}
 
 	/**
@@ -99,16 +96,94 @@ public class TelegramService extends TelegramLongPollingBot{
 	public String getBotToken() {
 		return BOTTOKEN;
 	}
-	
-	private void sendMsg(Message message, String text) {
-		SendMessage sendMessage = new SendMessage();
-		sendMessage.enableMarkdown(false);
-		sendMessage.setChatId(message.getChatId().toString());		
-		sendMessage.setText(text);
-		try {
-			sendMessage(sendMessage);
-		} catch (TelegramApiException e) {
-			e.printStackTrace();
+
+	/**
+	 * This method will be called when an Update is received by your bot
+	 */
+	@Override
+	public void onUpdateReceived(Update update) {
+
+		Message message = update.getMessage();
+
+		String key = message.getText();
+
+		urlFromTelegram = message.getText();
+
+		Long chatId = message.getChatId();
+
+		if (!StringUtils.isBlank(domainService.getDomain(urlFromTelegram))) {
+			
+			lastMessagesOfUsers.put(chatId, message.getText());
+			
+			if(storageFilesService.urlIsExistInDB(urlFromTelegram)){
+				requestFromBot = true;
+			}else{
+				requestFromBot = false;
+				key = PARSE_PAGE;
+			}		
 		}
+
+		if (requestFromBot) {
+			sendMsg(message, QUESTION_FOR_USER);
+			requestFromBot = false;
+			return;
+		}
+
+		switch (key) {
+		case REQUEST_TO_BOT_ON_HELP:
+			sendMsg(message, ANSWER_FROM_BOT_ON_HELP);
+			break;
+		case REQUEST_TO_BOT_ON_START:
+			sendMsg(message, ANSWER_FROM_BOT_ON_START);
+			break;
+		case PARSE_PAGE:
+			
+			sendMsg(message, PLEASE_WAIT);
+			if (callCrawlerService.callCrawler(lastMessagesOfUsers.get(chatId))) {
+
+				String s = FIRST_PART_OF_ANSWER_BOT + lastMessagesOfUsers.get(chatId);
+				sendMsg(message, s);
+
+			} else {
+				sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
+			}
+			
+			break;
+		case GET_INFO_FROM_DB:
+			storageFilesService.getByUrl(PATH_TO_RESULT_FILE, lastMessagesOfUsers.get(chatId));
+			String s = FIRST_PART_OF_ANSWER_BOT + lastMessagesOfUsers.get(chatId);
+			sendMsg(message, s);
+			break;
+		default:
+
+			sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
+
+			break;
+		}
+
+	}
+
+	/**
+	 * Function for send message from bot to telegram
+	 * 
+	 * @param message
+	 *            message - message information that telegram get
+	 * @param text
+	 *            text-text that bot send to telegram
+	 */
+	private void sendMsg(Message message, String text) {
+
+		boolean enableMarkdownMessage = false;
+		SendMessage messageForSend = new SendMessage();
+		messageForSend.enableMarkdown(enableMarkdownMessage);
+		messageForSend.setChatId(message.getChatId().toString());
+		messageForSend.setText(text);
+
+		try {
+			sendMessage(messageForSend);
+		} catch (TelegramApiException e) {
+			log.error("Error in sendMsg ---  " + e.getMessage());
+		}
+
 	}
 }

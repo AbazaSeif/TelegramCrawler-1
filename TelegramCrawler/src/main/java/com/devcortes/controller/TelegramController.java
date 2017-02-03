@@ -10,10 +10,13 @@ import com.devcortes.service.TelegramService;
 @RestController
 @RequestMapping(value = "/bot")
 public class TelegramController {
+	
 	@Autowired
-	TelegramService telegramService;
+	private TelegramService telegramService;	
+	
 	@RequestMapping(value="/run", method = RequestMethod.GET)
-	public void runBot() throws Exception{
+	public void runBot(){		
+		
 		telegramService.initBot();			
 	}
 }
