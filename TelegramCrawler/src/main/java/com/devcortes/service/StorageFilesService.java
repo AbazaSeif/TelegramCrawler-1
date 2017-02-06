@@ -12,6 +12,14 @@ public class StorageFilesService {
 	@Autowired
 	IStorageFilesDAO iStorageFilesDAO;
 	
+	public IStorageFilesDAO getiStorageFilesDAO() {
+		return iStorageFilesDAO;
+	}
+
+	public void setiStorageFilesDAO(IStorageFilesDAO iStorageFilesDAO) {
+		this.iStorageFilesDAO = iStorageFilesDAO;
+	}
+
 	public void add(String path, String url) {
 		iStorageFilesDAO.add(path, url);
 	}
@@ -20,8 +28,8 @@ public class StorageFilesService {
 		return iStorageFilesDAO.getByUrl(path, url);
 	}
 	
-	public void update(String url, String path) {
-		iStorageFilesDAO.update(url, path);
+	public void update(String oldUrl, String newUrl, String path) {
+		iStorageFilesDAO.update(oldUrl, newUrl, path);
 	}
 	
 	public boolean urlIsExistInDB(String url) {

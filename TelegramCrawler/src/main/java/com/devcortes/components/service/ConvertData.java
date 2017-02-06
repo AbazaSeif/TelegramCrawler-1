@@ -75,7 +75,7 @@ public class ConvertData {
 	 *            storageOfLinks-model where store results of parsing
 	 * @throws Exception
 	 */
-	public void conversationData(StorageResult storageResult) throws Exception {
+	private void conversationData(StorageResult storageResult) throws Exception {
 
 		ParsePage alreadyParsedLink = new ParsePage();
 
@@ -114,7 +114,7 @@ public class ConvertData {
 	 * @param storageSetsLinks
 	 *            storageOfLinks-model where store results of parsing
 	 */
-	public void recursiveShowTXT(ParsePage alreadyParsedLink, StorageResult storageResult) {
+	private void recursiveShowTXT(ParsePage alreadyParsedLink, StorageResult storageResult) {
 
 		convertTxtService.writeToTxtLocalLink(alreadyParsedLink.getDepth(), alreadyParsedLink.getUrl(), fileName);
 
@@ -148,7 +148,7 @@ public class ConvertData {
 	 *            storageOfLinks-model where store results of parsing
 	 * @throws Exception
 	 */
-	public void convertToCSV(ParsePage alreadyParsedLink, StorageResult storageResult) throws Exception {
+	private void convertToCSV(ParsePage alreadyParsedLink, StorageResult storageResult) throws Exception {
 
 		convertDataToCsvService.writeToCsvLocalLink(alreadyParsedLink.getDepth(), alreadyParsedLink.getUrl(), fileName);
 
