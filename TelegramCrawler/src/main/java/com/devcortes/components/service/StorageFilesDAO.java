@@ -35,7 +35,7 @@ public class StorageFilesDAO extends HibernateUtil implements IStorageFilesDAO {
 	IConvertFilesToBlobAndBack iConvertFilesToBLOB;
 
 	@Override
-	public void update(String url, String path) {
+	public void update(String oldUrl, String newUrl, String path) {
 
 		StorageFiles infoByUrl = null;
 
@@ -43,11 +43,12 @@ public class StorageFilesDAO extends HibernateUtil implements IStorageFilesDAO {
 
 			session.beginTransaction();
 
-			String filename = url.replace('/', ' ');
+			String filename = oldUrl.replace('/', ' ');
 
 			infoByUrl = (StorageFiles) session.createCriteria(StorageFiles.class).add(Restrictions.eq(URL, filename))
 					.uniqueResult();
 
+			filename = newUrl.replace('/', ' ');
 			infoByUrl.setUrl(filename);
 			infoByUrl.setFileTxt(iConvertFilesToBLOB.convertFile(path, filename, TXT_FILE_FORMAT));
 			infoByUrl.setFilePdf(iConvertFilesToBLOB.convertFile(path, filename, PDF_FILE_FORMAT));

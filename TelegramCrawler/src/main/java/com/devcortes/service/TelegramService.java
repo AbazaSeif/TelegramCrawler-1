@@ -17,7 +17,6 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import com.devcortes.components.service.DomainService;
-import com.devcortes.components.service.StorageFilesDAO;
 
 /**
  * Service that manage telegram bot
@@ -26,7 +25,7 @@ import com.devcortes.components.service.StorageFilesDAO;
  *
  */
 @Service
-@Scope(scopeName="prototype")
+@Scope(scopeName = "prototype")
 public class TelegramService extends TelegramLongPollingBot {
 
 	private static final Logger log = Logger.getLogger(DomainService.class);
@@ -38,17 +37,16 @@ public class TelegramService extends TelegramLongPollingBot {
 	private static final String ANSWER_FROM_BOT_ON_HELP = "Hello, my name is Cortesbot";
 	private static final String ANSWER_FROM_BOT_ON_START = "I'm working";
 	private static final String DEFAULT_ANSWER_FROM_BOT = "I don`t know how answer to you";
-	private static final String PARSE_PAGE = "yes";	
+	private static final String PARSE_PAGE = "yes";
 	private static final String GET_INFO_FROM_DB = "no";
 	private static final String PATH_TO_RESULT_FILE = "/var/www/crawler.com/public_html/results/";
-	private static final String QUESTION_FOR_USER = "I have already parsed resultsCan you want wait some time or you want get information quickly (yes/no)?";
+	private static final String QUESTION_FOR_USER = "I have already parsed results. Can you want wait some time or you want get information quickly (yes/no)?";
 	private static final String PLEASE_WAIT = "Please wait........";
 
 	private Map<Long, String> lastMessagesOfUsers;
 
 	private String urlFromTelegram;
 	private boolean requestFromBot;
-	
 
 	@Autowired
 	private StorageFilesService storageFilesService;
@@ -78,7 +76,7 @@ public class TelegramService extends TelegramLongPollingBot {
 		} catch (TelegramApiException e) {
 			log.error("Error in getDomain ---  " + e.getMessage());
 			throw new RuntimeException(e);
-		}
+		}		
 	}
 
 	/**
@@ -112,15 +110,15 @@ public class TelegramService extends TelegramLongPollingBot {
 		Long chatId = message.getChatId();
 
 		if (!StringUtils.isBlank(domainService.getDomain(urlFromTelegram))) {
-			
+
 			lastMessagesOfUsers.put(chatId, message.getText());
-			
-			if(storageFilesService.urlIsExistInDB(urlFromTelegram)){
+
+			if (storageFilesService.urlIsExistInDB(urlFromTelegram)) {
 				requestFromBot = true;
-			}else{
+			} else {
 				requestFromBot = false;
 				key = PARSE_PAGE;
-			}		
+			}
 		}
 
 		if (requestFromBot) {
@@ -137,7 +135,7 @@ public class TelegramService extends TelegramLongPollingBot {
 			sendMsg(message, ANSWER_FROM_BOT_ON_START);
 			break;
 		case PARSE_PAGE:
-			
+
 			sendMsg(message, PLEASE_WAIT);
 			if (callCrawlerService.callCrawler(lastMessagesOfUsers.get(chatId))) {
 
@@ -147,7 +145,7 @@ public class TelegramService extends TelegramLongPollingBot {
 			} else {
 				sendMsg(message, DEFAULT_ANSWER_FROM_BOT);
 			}
-			
+
 			break;
 		case GET_INFO_FROM_DB:
 			storageFilesService.getByUrl(PATH_TO_RESULT_FILE, lastMessagesOfUsers.get(chatId));
